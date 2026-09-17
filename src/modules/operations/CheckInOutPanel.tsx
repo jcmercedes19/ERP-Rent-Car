@@ -4,12 +4,12 @@ import { useVehicleStore } from "../../app/store/useVehicleStore";
 import { useCustomerStore } from "../../app/store/useCustomerStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { InspectionForm } from "./components/InspectionForm";
-import { Search, LogOut, LogIn, Clock, AlertCircle } from "lucide-react";
+import { Search, LogOut, LogIn, Clock } from "lucide-react";
 
 export const CheckInOutPanel = () => {
   const { activeCompany } = useTenantStore();
   const { reservations, fetchReservations, updateReservationStatus } = useReservationStore();
-  const { vehicles, fetchVehicles, updateVehicleStatus } = useVehicleStore();
+  const { vehicles, fetchVehicles, updateVehicle } = useVehicleStore();
   const { customers, fetchCustomers } = useCustomerStore();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,13 +50,13 @@ export const CheckInOutPanel = () => {
         // Pasa de PENDING a CONFIRMED
         await updateReservationStatus(reservation.id, 'CONFIRMED');
         // Vehículo pasa a RENTED
-        await updateVehicleStatus(vehicle.id, 'RENTED');
+        await updateVehicle(vehicle.id, { status: 'RENTED' });
       } else {
         // CHECK_IN
         // Pasa de CONFIRMED a COMPLETED
         await updateReservationStatus(reservation.id, 'COMPLETED');
         // Vehículo pasa a AVAILABLE (o NEEDS_CLEANING según reglas complejas, usaremos AVAILABLE por defecto)
-        await updateVehicleStatus(vehicle.id, 'AVAILABLE');
+        await updateVehicle(vehicle.id, { status: 'AVAILABLE' });
       }
       
       alert(`Flujo de ${type === 'CHECK_OUT' ? 'Entrega' : 'Recepción'} completado exitosamente.`);

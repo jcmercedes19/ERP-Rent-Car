@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { GlassModal } from "../../../shared/components/ui/GlassModal";
 import { Button } from "../../../shared/components/ui/Button";
 import { Input } from "../../../shared/components/ui/Input";
-import { Car, Camera, Fuel, Activity, FileText } from "lucide-react";
+import { Car, Fuel, Activity, FileText } from "lucide-react";
 
 interface InspectionFormProps {
   isOpen: boolean;

@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
-import es from "date-fns/locale/es";
+import { es } from "date-fns/locale/es";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useReservationStore } from "../../app/store/useReservationStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { useVehicleStore } from "../../app/store/useVehicleStore";
 import { useCustomerStore } from "../../app/store/useCustomerStore";
 import { ReservationForm } from "./components/ReservationForm";
-import { Plus, Calendar as CalendarIcon, Clock, CheckCircle, XCircle } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "../../shared/components/ui/Button";
 
 const locales = {
