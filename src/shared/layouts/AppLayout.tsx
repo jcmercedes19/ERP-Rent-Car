@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3 } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 
@@ -57,13 +57,17 @@ export const AppLayout: React.FC = () => {
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Finanzas</p>
           </div>
-          <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <DollarSign size={18} />
+          <Link to="/finances/overview" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <BarChart3 size={18} />
+            Dashboard Financiero
+          </Link>
+          <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
+            <DollarSign size={16} />
             Pagos e Ingresos
           </Link>
-          <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <CreditCard size={18} />
-            Gastos
+          <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
+            <CreditCard size={16} />
+            Gastos Operativos
           </Link>
           <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Settings size={18} />

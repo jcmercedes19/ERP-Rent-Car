@@ -5,7 +5,7 @@ import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { GlassModal } from "../../shared/components/ui/GlassModal";
 import { Button } from "../../shared/components/ui/Button";
 import { Input } from "../../shared/components/ui/Input";
-import { DollarSign, Plus, Search, Tag, Calendar, AlignLeft } from "lucide-react";
+import { DollarSign, Plus, Search, Tag, Calendar, AlignLeft, TrendingDown, Clock } from "lucide-react";
 
 export const ExpenseList = () => {
   const { activeCompany } = useTenantStore();
@@ -43,6 +43,15 @@ export const ExpenseList = () => {
     e.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+  // Calculate expenses for this month
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthExpenses = expenses.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+  }).reduce((sum, e) => sum + e.amount, 0);
+
   const columns = [
     {
       header: "Fecha",
@@ -55,14 +64,14 @@ export const ExpenseList = () => {
     {
       header: "Categoría",
       cell: (row: any) => (
-        <span className="px-2 py-1 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+        <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20 backdrop-blur-sm">
           {row.category}
         </span>
       )
     },
     {
       header: "Monto",
-      cell: (row: any) => <span className="font-bold text-red-500">-${row.amount}</span>
+      cell: (row: any) => <span className="font-bold text-rose-500">-${row.amount.toLocaleString()}</span>
     }
   ];
 
@@ -73,10 +82,31 @@ export const ExpenseList = () => {
           <h1 className="text-2xl font-bold text-foreground">Gastos Operativos</h1>
           <p className="text-sm text-muted-foreground">Controla las salidas de dinero (Caja chica, mantenimiento, etc).</p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} variant="outline" className="border-red-500/20 text-red-500 hover:bg-red-500/10">
+        <Button onClick={() => setIsModalOpen(true)} variant="outline" className="border-rose-500/20 text-rose-500 hover:bg-rose-500/10">
           <Plus size={18} className="mr-2" />
           Registrar Gasto
         </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass p-4 rounded-2xl shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl">
+            <TrendingDown size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Gastos Totales (Histórico)</p>
+            <h3 className="text-2xl font-bold text-rose-500">${totalExpenses.toLocaleString()}</h3>
+          </div>
+        </div>
+        <div className="glass p-4 rounded-2xl shadow-sm flex items-center gap-4 border-rose-500/20">
+          <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl">
+            <Clock size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Gastos del Mes Actual</p>
+            <h3 className="text-2xl font-bold text-rose-500">${monthExpenses.toLocaleString()}</h3>
+          </div>
+        </div>
       </div>
 
       <div className="glass p-4 rounded-2xl shadow-apple flex items-center max-w-md">

@@ -6,7 +6,7 @@ import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { GlassModal } from "../../shared/components/ui/GlassModal";
 import { Button } from "../../shared/components/ui/Button";
 import { Input } from "../../shared/components/ui/Input";
-import { DollarSign, Plus, Search, FileText, CreditCard } from "lucide-react";
+import { DollarSign, Plus, Search, FileText, CreditCard, Wallet, AlertCircle } from "lucide-react";
 
 export const PaymentsList = () => {
   const { activeCompany } = useTenantStore();
@@ -48,6 +48,9 @@ export const PaymentsList = () => {
     p.contractId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalIncome = payments.filter(p => p.type !== 'DEPOSIT').reduce((sum, p) => sum + p.amount, 0);
+  const totalDeposits = payments.filter(p => p.type === 'DEPOSIT').reduce((sum, p) => sum + p.amount, 0);
+
   const columns = [
     {
       header: "Fecha",
@@ -60,15 +63,32 @@ export const PaymentsList = () => {
     {
       header: "Concepto",
       cell: (row: any) => {
-        const types = { RENT: 'Pago de Renta', DEPOSIT: 'Depósito Garantía', PENALTY: 'Penalidad' };
-        return <span className="text-sm">{types[row.type as keyof typeof types] || row.type}</span>;
+        if (row.type === 'DEPOSIT') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20 backdrop-blur-sm">
+              Depósito Garantía
+            </span>
+          );
+        }
+        if (row.type === 'PENALTY') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-500 border border-rose-500/20 backdrop-blur-sm">
+              Penalidad / Extra
+            </span>
+          );
+        }
+        return (
+          <span className="px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 backdrop-blur-sm">
+            Pago de Renta
+          </span>
+        );
       }
     },
     {
       header: "Método",
       cell: (row: any) => {
         const methods = { CASH: 'Efectivo', CARD: 'Tarjeta', TRANSFER: 'Transferencia' };
-        return <span className="text-sm">{methods[row.method as keyof typeof methods] || row.method}</span>;
+        return <span className="text-sm text-muted-foreground">{methods[row.method as keyof typeof methods] || row.method}</span>;
       }
     },
     {
@@ -77,7 +97,11 @@ export const PaymentsList = () => {
     },
     {
       header: "Monto",
-      cell: (row: any) => <span className="font-bold text-green-500">+${row.amount}</span>
+      cell: (row: any) => (
+        <span className={`font-bold ${row.type === 'DEPOSIT' ? 'text-amber-500' : 'text-emerald-500'}`}>
+          +${row.amount.toLocaleString()}
+        </span>
+      )
     }
   ];
 
@@ -85,13 +109,34 @@ export const PaymentsList = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Ingresos y Pagos</h1>
-          <p className="text-sm text-muted-foreground">Registra los cobros asociados a contratos y garantías.</p>
+          <h1 className="text-2xl font-bold text-foreground">Registro de Cobros</h1>
+          <p className="text-sm text-muted-foreground">Administra los pagos de renta y depósitos de garantía.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)}>
           <Plus size={18} className="mr-2" />
           Registrar Cobro
         </Button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="glass p-4 rounded-2xl shadow-sm flex items-center gap-4">
+          <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+            <DollarSign size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Ingresos Operativos</p>
+            <h3 className="text-2xl font-bold text-emerald-500">${totalIncome.toLocaleString()}</h3>
+          </div>
+        </div>
+        <div className="glass p-4 rounded-2xl shadow-sm flex items-center gap-4 border-amber-500/20">
+          <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+            <Wallet size={24} />
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground flex items-center gap-1">Garantías Retenidas <AlertCircle size={12}/></p>
+            <h3 className="text-2xl font-bold text-amber-500">${totalDeposits.toLocaleString()}</h3>
+          </div>
+        </div>
       </div>
 
       <div className="glass p-4 rounded-2xl shadow-apple flex items-center max-w-md">

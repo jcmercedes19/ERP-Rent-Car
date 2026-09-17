@@ -9,6 +9,7 @@ import { ContractList } from '../../modules/contracts/ContractList';
 import { ContractTemplateList } from '../../modules/contracts/templates/ContractTemplateList';
 import { PaymentsList } from '../../modules/finances/PaymentsList';
 import { ExpenseList } from '../../modules/finances/ExpenseList';
+import { FinancialDashboard } from '../../modules/finances/FinancialDashboard';
 import { Dashboard } from '../../modules/dashboard/Dashboard';
 
 export const router = createBrowserRouter([
@@ -46,6 +47,10 @@ export const router = createBrowserRouter([
           {
             path: 'contracts/templates',
             element: <ContractTemplateList />,
+          },
+          {
+            path: 'finances/overview',
+            element: <FinancialDashboard />,
           },
           {
             path: 'finances/payments',
