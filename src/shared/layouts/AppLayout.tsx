@@ -37,7 +37,7 @@ export const AppLayout: React.FC = () => {
             <LayoutDashboard size={18} />
             Dashboard
           </Link>
-          <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+          <Link to="/fleet" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Car size={18} />
             Flota
           </Link>

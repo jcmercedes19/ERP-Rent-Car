@@ -24,13 +24,15 @@ export const ProtectedRoute: React.FC = () => {
         
         setMemberships(memberships);
 
-        if (memberships.length === 1 && !activeCompany) {
-          // Auto select the only company
+        if (memberships.length > 0 && !activeCompany) {
+          // Auto select the first company available for now (until we build a tenant selector)
           const companyId = memberships[0].companyId;
           const compDoc = await getDoc(doc(db, 'companies', companyId));
           if (compDoc.exists()) {
             setTenantContext({ id: compDoc.id, ...compDoc.data() } as any, memberships[0].branchIds[0] || '');
           }
+        } else if (memberships.length === 0) {
+          console.error("Este usuario no tiene ninguna empresa asignada.");
         }
       } catch (error) {
         console.error("Error fetching context", error);

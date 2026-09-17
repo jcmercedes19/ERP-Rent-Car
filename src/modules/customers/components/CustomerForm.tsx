@@ -69,7 +69,10 @@ export const CustomerForm = ({ isOpen, onClose, customerToEdit }: CustomerFormPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeCompany?.id) return;
+    if (!activeCompany?.id) {
+      alert("Error: No hay una empresa activa seleccionada en el sistema.");
+      return;
+    }
 
     try {
       if (customerToEdit) {
@@ -78,8 +81,9 @@ export const CustomerForm = ({ isOpen, onClose, customerToEdit }: CustomerFormPr
         await addCustomer({ ...formData, companyId: activeCompany.id });
       }
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving customer:", error);
+      alert(`Ocurrió un error al guardar: ${error.message}`);
     }
   };
 

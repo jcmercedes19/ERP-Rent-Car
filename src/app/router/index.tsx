@@ -4,6 +4,7 @@ import { ProtectedRoute } from '../../core/auth/ProtectedRoute';
 import { Login } from '../../modules/auth/Login';
 import { RegisterCompany } from '../../modules/auth/RegisterCompany';
 import { CustomerList } from '../../modules/customers/CustomerList';
+import { FleetList } from '../../modules/fleet/FleetList';
 
 export const router = createBrowserRouter([
   {
@@ -28,6 +29,10 @@ export const router = createBrowserRouter([
           {
             path: 'customers',
             element: <CustomerList />,
+          },
+          {
+            path: 'fleet',
+            element: <FleetList />,
           },
         ],
       },
