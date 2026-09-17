@@ -3,8 +3,30 @@ import { useCustomerStore, type Customer } from "../../app/store/useCustomerStor
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { Button } from "../../shared/components/ui/Button";
-import { Plus, Search, Edit2, Trash2 } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, CheckCircle2, XCircle, Phone, CreditCard, Mail } from "lucide-react";
 import { CustomerForm } from "./components/CustomerForm";
+
+// Funciones auxiliares para el avatar
+const getInitials = (firstName: string, lastName: string) => {
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+};
+
+const getAvatarColor = (name: string) => {
+  const colors = [
+    'bg-blue-500 text-blue-50',
+    'bg-indigo-500 text-indigo-50',
+    'bg-violet-500 text-violet-50',
+    'bg-fuchsia-500 text-fuchsia-50',
+    'bg-rose-500 text-rose-50',
+    'bg-orange-500 text-orange-50',
+    'bg-emerald-500 text-emerald-50',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+};
 
 export const CustomerList = () => {
   const { activeCompany } = useTenantStore();
@@ -45,36 +67,66 @@ export const CustomerList = () => {
     {
       header: "Cliente",
       cell: (row: Customer) => (
-        <div>
-          <div className="font-semibold text-foreground">{row.firstName} {row.lastName}</div>
-          <div className="text-xs text-muted-foreground">{row.email}</div>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shadow-inner ${getAvatarColor(row.firstName)}`}>
+            {getInitials(row.firstName, row.lastName)}
+          </div>
+          <div>
+            <div className="font-semibold text-foreground">{row.firstName} {row.lastName}</div>
+            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+              <Mail size={10} />
+              {row.email}
+            </div>
+          </div>
         </div>
       )
     },
     {
       header: "Documento",
-      accessorKey: "documentId" as keyof Customer
+      cell: (row: Customer) => (
+        <div className="flex items-center gap-2 text-sm text-foreground">
+          <div className="p-1.5 bg-secondary/80 rounded-md text-muted-foreground">
+            <CreditCard size={14} />
+          </div>
+          {row.documentId}
+        </div>
+      )
     },
     {
       header: "Teléfono",
-      accessorKey: "phone" as keyof Customer
+      cell: (row: Customer) => (
+        <div className="flex items-center gap-2 text-sm text-foreground">
+          <div className="p-1.5 bg-secondary/80 rounded-md text-muted-foreground">
+            <Phone size={14} />
+          </div>
+          {row.phone}
+        </div>
+      )
     },
     {
       header: "Estado",
-      cell: (row: Customer) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${row.status === 'active' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
-          {row.status === 'active' ? 'Activo' : 'Inactivo'}
-        </span>
-      )
+      cell: (row: Customer) => {
+        const isActive = row.status === 'active';
+        return (
+          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border backdrop-blur-sm shadow-sm transition-all
+            ${isActive 
+              ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+              : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'}`}
+          >
+            {isActive ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+            {isActive ? 'Activo' : 'Inactivo'}
+          </div>
+        );
+      }
     },
     {
       header: "Acciones",
       cell: (row: Customer) => (
         <div className="flex gap-2">
-          <button onClick={() => handleEdit(row)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors">
+          <button onClick={() => handleEdit(row)} className="p-2 text-blue-500 hover:bg-blue-500/10 hover:scale-110 rounded-full transition-all" title="Editar Cliente">
             <Edit2 size={16} />
           </button>
-          <button onClick={() => handleDelete(row.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors">
+          <button onClick={() => handleDelete(row.id)} className="p-2 text-red-500 hover:bg-red-500/10 hover:scale-110 rounded-full transition-all" title="Eliminar Cliente">
             <Trash2 size={16} />
           </button>
         </div>

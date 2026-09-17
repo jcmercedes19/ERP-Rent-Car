@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { GlassModal } from "../../../../shared/components/ui/GlassModal";
-import { Input } from "../../../../shared/components/ui/Input";
-import { Button } from "../../../../shared/components/ui/Button";
-import { useContractTemplateStore, type ContractTemplate } from "../../../../app/store/useContractTemplateStore";
-import { useTenantStore } from "../../../../app/store/useTenantStore";
+import { GlassModal } from "../../../shared/components/ui/GlassModal";
+import { Input } from "../../../shared/components/ui/Input";
+import { Button } from "../../../shared/components/ui/Button";
+import { useContractTemplateStore, type ContractTemplate } from "../../../app/store/useContractTemplateStore";
+import { useTenantStore } from "../../../app/store/useTenantStore";
 import { FileSignature, Terminal } from "lucide-react";
 
 interface ContractTemplateFormProps {
@@ -71,7 +71,7 @@ export const ContractTemplateForm = ({ isOpen, onClose, templateToEdit }: Contra
       isOpen={isOpen}
       onClose={onClose}
       title={templateToEdit ? "Editar Plantilla Legal" : "Nueva Plantilla Legal"}
-      width="3xl"
+      width="xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>

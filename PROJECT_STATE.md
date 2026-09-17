@@ -3,17 +3,18 @@
 ## LAST SESSION
 - Implementación de la FASE 1 (Fundación).
 - Creación de proyecto Firebase: `rentcar-erp-jcm-2026`.
-- Configuración de Vite, React, TypeScript y Tailwind CSS V4.
+- Configuración de ruteo y componentes base de autenticación.
 - Implementación de estado global (Zustand) para `Auth` y `Tenant`.
-- Configuración de ruteo (`react-router-dom`) y componentes base de autenticación (Login, Registro Multi-Tenant, Layout).
 
 ## CURRENT WORK
-- Inicio de la FASE 2: Clientes y Flota.
-- Actualización del modelo `Vehicle` y su interfaz visual para reflejar los 10 estados de la regla de negocio (Available, Reserved, Rented, Delivery, Returning, Maintenance, Repair, Accident, Out of Service, Sold) con un diseño UI profesional.
+- FASE 2: Clientes y Flota completadas a nivel UI y persistencia.
+- Interfaz visual para reflejar los 10 estados del vehículo con un diseño UI profesional.
+- Rediseño "Premium" (avatares, badges) para el directorio de Clientes.
+- Módulo de Contratos y Plantillas Legales Profesionales.
 
 ## NEXT ACTION
-- Integrar la base de datos de Firestore en las vistas (funcionalidad de lectura/escritura) de Clientes y Flota.
-- Habilitar Authentication (Email/Password) y Firestore Database desde la consola de Firebase.
+- Integrar la funcionalidad completa y pulir el módulo de Finanzas (Pagos e Ingresos, Gastos).
+- Implementar validaciones extra según BUSINESS_RULES.md (ej: validación de disponibilidad cruzando contratos y estado de flota).
 
 ## CONTINUAR
-- Pedir al usuario que pruebe la funcionalidad de creación de vehículos y que valide la calidad de la interfaz visual en `FleetList`.
+- Pedir feedback sobre el módulo de clientes rediseñado.

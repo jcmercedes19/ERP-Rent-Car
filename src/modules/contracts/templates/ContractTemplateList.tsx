@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useContractTemplateStore, type ContractTemplate } from "../../../../app/store/useContractTemplateStore";
-import { useTenantStore } from "../../../../app/store/useTenantStore";
-import { GlassTable } from "../../../../shared/components/ui/GlassTable";
-import { Button } from "../../../../shared/components/ui/Button";
+import { useContractTemplateStore, type ContractTemplate } from "../../../app/store/useContractTemplateStore";
+import { useTenantStore } from "../../../app/store/useTenantStore";
+import { GlassTable } from "../../../shared/components/ui/GlassTable";
+import { Button } from "../../../shared/components/ui/Button";
 import { Plus, Search, Edit2, Trash2, FileSignature } from "lucide-react";
 import { ContractTemplateForm } from "./ContractTemplateForm";
 
