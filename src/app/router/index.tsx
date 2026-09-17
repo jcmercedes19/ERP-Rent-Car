@@ -11,6 +11,8 @@ import { PaymentsList } from '../../modules/finances/PaymentsList';
 import { ExpenseList } from '../../modules/finances/ExpenseList';
 import { FinancialDashboard } from '../../modules/finances/FinancialDashboard';
 import { Dashboard } from '../../modules/dashboard/Dashboard';
+import { ReservationCalendar } from '../../modules/reservations/ReservationCalendar';
+import { CheckInOutPanel } from '../../modules/operations/CheckInOutPanel';
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +37,14 @@ export const router = createBrowserRouter([
           {
             path: 'customers',
             element: <CustomerList />,
+          },
+          {
+            path: 'reservations',
+            element: <ReservationCalendar />,
+          },
+          {
+            path: 'operations',
+            element: <CheckInOutPanel />,
           },
           {
             path: 'fleet',

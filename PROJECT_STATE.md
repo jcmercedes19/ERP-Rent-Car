@@ -7,14 +7,14 @@
 - Implementación de estado global (Zustand) para `Auth` y `Tenant`.
 
 ## CURRENT WORK
-- FASE 2: Clientes y Flota completadas a nivel UI y persistencia.
-- Interfaz visual para reflejar los 10 estados del vehículo con un diseño UI profesional.
-- Rediseño "Premium" (avatares, badges) para el directorio de Clientes.
-- Módulo de Contratos y Plantillas Legales Profesionales.
+- FASE 4: Finanzas. Creación del Dashboard Financiero y rediseño UI de Pagos y Gastos.
+- Módulos de Clientes y Flota estabilizados a nivel de persistencia y diseño premium.
 
 ## NEXT ACTION
-- Integrar la funcionalidad completa y pulir el módulo de Finanzas (Pagos e Ingresos, Gastos).
-- Implementar validaciones extra según BUSINESS_RULES.md (ej: validación de disponibilidad cruzando contratos y estado de flota).
+- Iniciar FASE 3: RENTAL CORE.
+- Implementar "Cotizaciones y Reservaciones" con una Vista de Calendario.
+- Implementar "Flujo de Check-out y Check-in" con inspección digital de daños.
+- Implementar validaciones extra (ej: validación de disponibilidad cruzando reservas y estado de flota).
 
 ## CONTINUAR
-- Pedir feedback sobre el módulo de clientes rediseñado.
+- Presentar el plan de implementación de la Fase 3 (Calendario de Reservas).

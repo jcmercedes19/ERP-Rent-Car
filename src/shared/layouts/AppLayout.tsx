@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 
@@ -37,9 +37,17 @@ export const AppLayout: React.FC = () => {
             <LayoutDashboard size={18} />
             Dashboard
           </Link>
-          <Link to="/fleet" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <Car size={18} />
-            Flota
+          
+          <div className="pt-4 pb-1">
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Rental Core</p>
+          </div>
+          <Link to="/reservations" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <CalendarDays size={18} />
+            Reservaciones
+          </Link>
+          <Link to="/operations" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <Key size={18} />
+            Check-In / Out
           </Link>
           <Link to="/contracts" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <FileText size={18} />
@@ -49,17 +57,25 @@ export const AppLayout: React.FC = () => {
             <FileSignature size={16} />
             Plantillas Legales
           </Link>
+
+          <div className="pt-4 pb-1">
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Flota y Clientes</p>
+          </div>
+          <Link to="/fleet" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <Car size={18} />
+            Flota
+          </Link>
           <Link to="/customers" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Users size={18} />
             Clientes
           </Link>
-          
+
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Finanzas</p>
           </div>
           <Link to="/finances/overview" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <BarChart3 size={18} />
-            Dashboard Financiero
+            Dashboard
           </Link>
           <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
             <DollarSign size={16} />
@@ -69,6 +85,10 @@ export const AppLayout: React.FC = () => {
             <CreditCard size={16} />
             Gastos Operativos
           </Link>
+
+          <div className="pt-4 pb-1">
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ajustes</p>
+          </div>
           <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Settings size={18} />
             Configuración
