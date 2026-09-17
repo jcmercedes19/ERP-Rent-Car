@@ -17,6 +17,8 @@ import { MaintenancePanel } from '../../modules/fleet/MaintenancePanel';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { BookingPortal } from '../../modules/public/BookingPortal';
 import { CompanyDirectory } from '../../modules/public/CompanyDirectory';
+import { CashRegisterPanel } from '../../modules/finances/CashRegisterPanel';
+import { InvoicingPanel } from '../../modules/finances/InvoicingPanel';
 
 export const router = createBrowserRouter([
   {
@@ -87,6 +89,14 @@ export const router = createBrowserRouter([
           {
             path: 'finances/payments',
             element: <PaymentsList />,
+          },
+          {
+            path: 'finances/cash',
+            element: <CashRegisterPanel />,
+          },
+          {
+            path: 'finances/invoicing',
+            element: <InvoicingPanel />,
           },
           {
             path: 'finances/expenses',

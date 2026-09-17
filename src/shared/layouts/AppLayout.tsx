@@ -77,16 +77,20 @@ export const AppLayout: React.FC = () => {
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Finanzas</p>
           </div>
-          <Link to="/finances/overview" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <BarChart3 size={18} />
-            Dashboard
+          <Link to="/finances/invoicing" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <FileText size={18} />
+            Facturación Fiscal
           </Link>
-          <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
-            <DollarSign size={16} />
-            Pagos e Ingresos
+          <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <CreditCard size={18} />
+            Cobros
           </Link>
-          <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
-            <CreditCard size={16} />
+          <Link to="/finances/cash" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <DollarSign size={18} />
+            Control de Caja
+          </Link>
+          <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+            <CreditCard size={18} />
             Gastos Operativos
           </Link>
 
