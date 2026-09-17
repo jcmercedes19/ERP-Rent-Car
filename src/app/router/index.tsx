@@ -1,9 +1,9 @@
-
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../../shared/layouts/AppLayout';
 import { ProtectedRoute } from '../../core/auth/ProtectedRoute';
 import { Login } from '../../modules/auth/Login';
 import { RegisterCompany } from '../../modules/auth/RegisterCompany';
+import { CustomerList } from '../../modules/customers/CustomerList';
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +24,10 @@ export const router = createBrowserRouter([
           {
             index: true,
             element: <div className="p-6 bg-white rounded-lg shadow"><h1>Dashboard (En construcción)</h1><p className="text-gray-500 mt-2">Bienvenido al ERP Multi-Tenant.</p></div>,
+          },
+          {
+            path: 'customers',
+            element: <CustomerList />,
           },
         ],
       },

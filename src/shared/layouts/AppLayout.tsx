@@ -41,7 +41,7 @@ export const AppLayout: React.FC = () => {
             <Car size={18} />
             Flota
           </Link>
-          <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+          <Link to="/customers" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Users size={18} />
             Clientes
           </Link>
@@ -71,6 +71,13 @@ export const AppLayout: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <button 
+              onClick={handleLogout}
+              className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors md:hidden"
+              title="Cerrar Sesión"
+            >
+              <LogOut size={18} />
+            </button>
             <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm border border-primary/20">
               {user.email?.charAt(0).toUpperCase()}
             </div>
