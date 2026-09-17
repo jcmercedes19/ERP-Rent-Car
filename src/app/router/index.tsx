@@ -5,6 +5,7 @@ import { Login } from '../../modules/auth/Login';
 import { RegisterCompany } from '../../modules/auth/RegisterCompany';
 import { CustomerList } from '../../modules/customers/CustomerList';
 import { FleetList } from '../../modules/fleet/FleetList';
+import { ContractList } from '../../modules/contracts/ContractList';
 
 export const router = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ export const router = createBrowserRouter([
           {
             path: 'fleet',
             element: <FleetList />,
+          },
+          {
+            path: 'contracts',
+            element: <ContractList />,
           },
         ],
       },
