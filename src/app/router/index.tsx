@@ -8,6 +8,7 @@ import { FleetList } from '../../modules/fleet/FleetList';
 import { ContractList } from '../../modules/contracts/ContractList';
 import { PaymentsList } from '../../modules/finances/PaymentsList';
 import { ExpenseList } from '../../modules/finances/ExpenseList';
+import { Dashboard } from '../../modules/dashboard/Dashboard';
 
 export const router = createBrowserRouter([
   {
@@ -27,7 +28,7 @@ export const router = createBrowserRouter([
         children: [
           {
             index: true,
-            element: <div className="p-6 bg-white rounded-lg shadow"><h1>Dashboard (En construcción)</h1><p className="text-gray-500 mt-2">Bienvenido al ERP Multi-Tenant.</p></div>,
+            element: <Dashboard />,
           },
           {
             path: 'customers',

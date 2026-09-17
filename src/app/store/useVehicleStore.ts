@@ -10,7 +10,7 @@ export interface Vehicle {
   year: number;
   plate: string;
   category: 'ECONOMY' | 'COMPACT' | 'SUV' | 'LUXURY' | 'VAN';
-  status: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE';
+  status: 'AVAILABLE' | 'RESERVED' | 'RENTED' | 'DELIVERY' | 'RETURNING' | 'MAINTENANCE' | 'REPAIR' | 'ACCIDENT' | 'OUT_OF_SERVICE' | 'SOLD';
   dailyRate: number;
   currentMileage: number;
   imageUrl?: string;

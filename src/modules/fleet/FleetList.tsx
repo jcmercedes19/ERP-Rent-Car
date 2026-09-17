@@ -3,7 +3,7 @@ import { useVehicleStore, type Vehicle } from "../../app/store/useVehicleStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { Button } from "../../shared/components/ui/Button";
-import { Plus, Search, Edit2, Trash2, CarFront } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, CarFront, CheckCircle2, CalendarClock, Key, Truck, CornerDownLeft, Wrench, AlertTriangle, Ban, XOctagon, BadgeDollarSign } from "lucide-react";
 import { VehicleForm } from "./components/VehicleForm";
 
 export const FleetList = () => {
@@ -42,12 +42,28 @@ export const FleetList = () => {
   );
 
   const getStatusBadge = (status: Vehicle["status"]) => {
-    switch(status) {
-      case "AVAILABLE": return <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-500">Disponible</span>;
-      case "RENTED": return <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/10 text-blue-500">Rentado</span>;
-      case "MAINTENANCE": return <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-500/10 text-yellow-500">En Mantenimiento</span>;
-      default: return null;
-    }
+    const config = {
+      AVAILABLE: { label: "Disponible", color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30", icon: CheckCircle2 },
+      RESERVED: { label: "Reservado", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30", icon: CalendarClock },
+      RENTED: { label: "Rentado", color: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30", icon: Key },
+      DELIVERY: { label: "En Entrega", color: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30", icon: Truck },
+      RETURNING: { label: "Retornando", color: "bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30", icon: CornerDownLeft },
+      MAINTENANCE: { label: "Mantenimiento", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30", icon: Wrench },
+      REPAIR: { label: "Reparación", color: "bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30", icon: AlertTriangle },
+      ACCIDENT: { label: "Accidentado", color: "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/30", icon: XOctagon },
+      OUT_OF_SERVICE: { label: "Fuera de Servicio", color: "bg-slate-500/15 text-slate-600 dark:text-slate-400 border-slate-500/30", icon: Ban },
+      SOLD: { label: "Vendido", color: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 border-zinc-500/30", icon: BadgeDollarSign },
+    };
+
+    const statusConfig = config[status] || config.AVAILABLE;
+    const Icon = statusConfig.icon;
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusConfig.color} shadow-sm backdrop-blur-md transition-all hover:scale-105 cursor-default`}>
+        <Icon size={12} strokeWidth={2.5} />
+        {statusConfig.label}
+      </span>
+    );
   };
 
   const columns = [

@@ -147,9 +147,16 @@ export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps
             <div className="space-y-1 w-full">
               <label className="text-sm font-medium text-foreground ml-1">Estado</label>
               <select name="status" value={formData.status} onChange={handleChange} className="flex h-11 w-full rounded-xl border border-border bg-background/50 px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all">
-                <option value="AVAILABLE">Disponible</option>
-                <option value="RENTED">Rentado</option>
-                <option value="MAINTENANCE">En Mantenimiento</option>
+                <option value="AVAILABLE">Disponible (Listo para rentar)</option>
+                <option value="RESERVED">Reservado (Asignado a reserva futura)</option>
+                <option value="RENTED">Rentado (Contrato Activo)</option>
+                <option value="DELIVERY">En Entrega (En proceso de entrega)</option>
+                <option value="RETURNING">Retornando (En proceso de devolución)</option>
+                <option value="MAINTENANCE">Mantenimiento (Preventivo/Correctivo)</option>
+                <option value="REPAIR">Reparación (Daño mayor)</option>
+                <option value="ACCIDENT">Accidentado (Siniestrado)</option>
+                <option value="OUT_OF_SERVICE">Fuera de Servicio (Baja temporal)</option>
+                <option value="SOLD">Vendido (Baja definitiva)</option>
               </select>
             </div>
           </div>
