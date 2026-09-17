@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key, Wrench, Globe } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key, Wrench, Globe, Building } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 
@@ -104,6 +104,15 @@ export const AppLayout: React.FC = () => {
               Portal de Clientes
             </a>
           )}
+          <a 
+            href="/portal" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors font-medium"
+          >
+            <Building size={18} />
+            Marketplace Público
+          </a>
           <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Settings size={18} />
             Configuración

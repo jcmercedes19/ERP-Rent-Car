@@ -16,6 +16,7 @@ import { CheckInOutPanel } from '../../modules/operations/CheckInOutPanel';
 import { MaintenancePanel } from '../../modules/fleet/MaintenancePanel';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { BookingPortal } from '../../modules/public/BookingPortal';
+import { CompanyDirectory } from '../../modules/public/CompanyDirectory';
 
 export const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterCompany />,
+  },
+  {
+    path: '/portal',
+    element: <CompanyDirectory />,
   },
   {
     path: '/:companyId/book',
