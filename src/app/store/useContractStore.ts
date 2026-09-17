@@ -7,6 +7,8 @@ export interface RentalContract {
   companyId: string;
   customerId: string;
   vehicleId: string;
+  templateId?: string;
+  snapshotContent?: string;
   status: 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
   startDate: string;
   expectedReturnDate: string;

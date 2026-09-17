@@ -6,6 +6,7 @@ import { RegisterCompany } from '../../modules/auth/RegisterCompany';
 import { CustomerList } from '../../modules/customers/CustomerList';
 import { FleetList } from '../../modules/fleet/FleetList';
 import { ContractList } from '../../modules/contracts/ContractList';
+import { ContractTemplateList } from '../../modules/contracts/templates/ContractTemplateList';
 import { PaymentsList } from '../../modules/finances/PaymentsList';
 import { ExpenseList } from '../../modules/finances/ExpenseList';
 import { Dashboard } from '../../modules/dashboard/Dashboard';
@@ -41,6 +42,10 @@ export const router = createBrowserRouter([
           {
             path: 'contracts',
             element: <ContractList />,
+          },
+          {
+            path: 'contracts/templates',
+            element: <ContractTemplateList />,
           },
           {
             path: 'finances/payments',

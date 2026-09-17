@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 
@@ -44,6 +44,10 @@ export const AppLayout: React.FC = () => {
           <Link to="/contracts" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <FileText size={18} />
             Contratos
+          </Link>
+          <Link to="/contracts/templates" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
+            <FileSignature size={16} />
+            Plantillas Legales
           </Link>
           <Link to="/customers" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Users size={18} />

@@ -5,6 +5,7 @@ import { Button } from "../../../shared/components/ui/Button";
 import { useContractStore, type RentalContract } from "../../../app/store/useContractStore";
 import { useCustomerStore } from "../../../app/store/useCustomerStore";
 import { useVehicleStore } from "../../../app/store/useVehicleStore";
+import { useContractTemplateStore } from "../../../app/store/useContractTemplateStore";
 import { useTenantStore } from "../../../app/store/useTenantStore";
 import { Calendar, DollarSign, FileText, User, Car, ShieldCheck } from "lucide-react";
 
@@ -18,11 +19,13 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
   const { addContract, updateContract, loading } = useContractStore();
   const { customers, fetchCustomers } = useCustomerStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
+  const { templates, fetchTemplates } = useContractTemplateStore();
   const { activeCompany } = useTenantStore();
 
   const [formData, setFormData] = useState({
     customerId: "",
     vehicleId: "",
+    templateId: "",
     status: "DRAFT" as RentalContract["status"],
     startDate: new Date().toISOString().split('T')[0],
     expectedReturnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
@@ -39,6 +42,7 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
     if (activeCompany?.id && isOpen) {
       if (customers.length === 0) fetchCustomers(activeCompany.id);
       if (vehicles.length === 0) fetchVehicles(activeCompany.id);
+      if (templates.length === 0) fetchTemplates(activeCompany.id);
     }
   }, [activeCompany?.id, isOpen]); // removed dependencies that could cause infinite loop
 
@@ -47,6 +51,7 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
       setFormData({
         customerId: contractToEdit.customerId || "",
         vehicleId: contractToEdit.vehicleId || "",
+        templateId: contractToEdit.templateId || "",
         status: contractToEdit.status || "DRAFT",
         startDate: contractToEdit.startDate || "",
         expectedReturnDate: contractToEdit.expectedReturnDate || "",
@@ -60,7 +65,7 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
     } else {
       setFormData((prev) => ({
         ...prev,
-        customerId: "", vehicleId: "", status: "DRAFT",
+        customerId: "", vehicleId: "", templateId: "", status: "DRAFT",
         startDate: new Date().toISOString().split('T')[0],
         expectedReturnDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
         dailyRate: 0, totalDays: 1, subtotal: 0, depositAmount: 0, totalAmount: 0, notes: "",
@@ -120,10 +125,38 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
     }
 
     try {
+      let snapshotContent = contractToEdit?.snapshotContent || "";
+      
+      if (!contractToEdit && formData.templateId) {
+        const selectedTemplate = templates.find(t => t.id === formData.templateId);
+        if (selectedTemplate) {
+          const customer = customers.find(c => c.id === formData.customerId);
+          const vehicle = vehicles.find(v => v.id === formData.vehicleId);
+          
+          let content = selectedTemplate.content;
+          if (customer) {
+            content = content.replace(/{{CLIENT_NAME}}/g, `${customer.firstName} ${customer.lastName}`);
+            content = content.replace(/{{CLIENT_DOC}}/g, customer.documentId);
+            content = content.replace(/{{CLIENT_ADDRESS}}/g, customer.address);
+          }
+          if (vehicle) {
+            content = content.replace(/{{VEHICLE_BRAND}}/g, vehicle.brand);
+            content = content.replace(/{{VEHICLE_MODEL}}/g, vehicle.model);
+            content = content.replace(/{{VEHICLE_PLATE}}/g, vehicle.plate);
+          }
+          content = content.replace(/{{START_DATE}}/g, formData.startDate);
+          content = content.replace(/{{RETURN_DATE}}/g, formData.expectedReturnDate);
+          content = content.replace(/{{TOTAL_AMOUNT}}/g, formData.totalAmount.toString());
+          content = content.replace(/{{DEPOSIT_AMOUNT}}/g, formData.depositAmount.toString());
+          
+          snapshotContent = content;
+        }
+      }
+
       if (contractToEdit) {
         await updateContract(contractToEdit.id, formData);
       } else {
-        await addContract({ ...formData, companyId: activeCompany.id });
+        await addContract({ ...formData, snapshotContent, companyId: activeCompany.id });
       }
       onClose();
     } catch (error: any) {
@@ -176,7 +209,21 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
 
         {/* Fechas */}
         <div className="pt-4 border-t border-border/50">
-          <h3 className="text-lg font-semibold text-foreground mb-4">Fechas y Estado</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-4">Configuración Legal y Fechas</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="space-y-1 w-full md:col-span-2">
+              <label className="text-sm font-medium text-foreground ml-1">Plantilla de Contrato Legal</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground"><FileText size={18} /></div>
+                <select name="templateId" value={formData.templateId} onChange={handleChange} disabled={!!contractToEdit} className="flex h-11 w-full rounded-xl border border-border bg-background/50 px-4 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 transition-all pl-11 disabled:opacity-50">
+                  <option value="">-- Contrato Básico (Sin Plantilla) --</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.title}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Input label="Fecha Salida" type="date" name="startDate" value={formData.startDate} onChange={handleChange} icon={<Calendar size={18} />} required />
             <Input label="Fecha Retorno Estimada" type="date" name="expectedReturnDate" value={formData.expectedReturnDate} onChange={handleChange} icon={<Calendar size={18} />} required />
