@@ -9,7 +9,7 @@ import { Input } from "../../shared/components/ui/Input";
 import { DollarSign, Plus, Search, FileText, CreditCard, Wallet, AlertCircle } from "lucide-react";
 
 export const PaymentsList = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { payments, fetchFinances, addPayment, loading } = useFinanceStore();
   const { contracts, fetchContracts } = useContractStore();
   
@@ -27,7 +27,7 @@ export const PaymentsList = () => {
   useEffect(() => {
     if (activeCompany?.id) {
       fetchFinances(activeCompany.id);
-      fetchContracts(activeCompany.id);
+      fetchContracts(activeCompany.id, activeBranchId);
     }
   }, [activeCompany?.id, fetchFinances, fetchContracts]);
 

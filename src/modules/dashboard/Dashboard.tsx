@@ -1,10 +1,33 @@
+import { useEffect } from 'react';
 import { useAnalytics } from "../../app/hooks/useAnalytics";
+import { useTenantStore } from '../../app/store/useTenantStore';
+import { useFinanceStore } from '../../app/store/useFinanceStore';
+import { useVehicleStore } from '../../app/store/useVehicleStore';
+import { useMaintenanceStore } from '../../app/store/useMaintenanceStore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, Car, AlertTriangle, Download, CheckCircle } from "lucide-react";
 
 const COLORS = ['#10b981', '#3b82f6', '#f43f5e'];
 
 export const Dashboard = () => {
+  const { activeCompany, activeBranchId } = useTenantStore();
+  const { fetchFinances, unsubscribeFinances } = useFinanceStore();
+  const { fetchVehicles, unsubscribeSnapshot } = useVehicleStore();
+  const { fetchRecords, unsubscribeRecords } = useMaintenanceStore();
+
+  useEffect(() => {
+    if (activeCompany?.id) {
+      fetchFinances(activeCompany.id);
+      fetchVehicles(activeCompany.id, activeBranchId);
+      fetchRecords(activeCompany.id);
+    }
+    return () => {
+      unsubscribeFinances();
+      unsubscribeSnapshot?.();
+      unsubscribeRecords();
+    };
+  }, [activeCompany?.id, fetchFinances, fetchVehicles, fetchRecords]);
+
   const { 
     totalIncome, totalExpenses, netProfit, 
     totalVehicles, rentedVehicles, availableVehicles, maintenanceVehicles, occupancyRate,

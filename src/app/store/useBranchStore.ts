@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
+import { db } from '../../core/firebase/config';
+import { collection, doc, setDoc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
 export interface Branch {
   id: string;
@@ -11,43 +13,45 @@ export interface Branch {
   email: string;
   manager: string;
   status: 'ACTIVE' | 'INACTIVE';
-  createdAt: Date;
+  createdAt: any;
 }
 
 interface BranchState {
   branches: Branch[];
   loading: boolean;
   error: string | null;
-  fetchBranches: () => Promise<void>;
+  unsubscribeSnapshot: (() => void) | null;
+  fetchBranches: () => void;
   createBranch: (data: Omit<Branch, 'id' | 'companyId' | 'createdAt'>) => Promise<void>;
 }
 
-export const useBranchStore = create<BranchState>((set) => ({
+export const useBranchStore = create<BranchState>((set, get) => ({
   branches: [],
   loading: false,
   error: null,
+  unsubscribeSnapshot: null,
 
-  fetchBranches: async () => {
+  fetchBranches: () => {
     const { user } = useAuthStore.getState();
     if (!user?.companyId) return;
 
+    const existingUnsubscribe = get().unsubscribeSnapshot;
+    if (existingUnsubscribe) {
+      existingUnsubscribe();
+    }
+
     set({ loading: true, error: null });
     try {
-      const mockBranches: Branch[] = [
-        {
-          id: 'BR-001',
-          companyId: user.companyId,
-          name: 'Sede Principal - Santo Domingo',
-          address: 'Av. Winston Churchill 101',
-          city: 'Santo Domingo',
-          phone: '809-555-1234',
-          email: 'sd@rentcar.com',
-          manager: 'Juan Pérez',
-          status: 'ACTIVE',
-          createdAt: new Date()
-        }
-      ];
-      set({ branches: mockBranches, loading: false });
+      const q = query(collection(db, 'branches'), where('companyId', '==', user.companyId));
+      
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const branches = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Branch));
+        set({ branches, loading: false });
+      }, (error) => {
+        set({ error: error.message, loading: false });
+      });
+
+      set({ unsubscribeSnapshot: unsubscribe });
     } catch (error: any) {
       set({ error: error.message, loading: false });
     }
@@ -59,15 +63,17 @@ export const useBranchStore = create<BranchState>((set) => ({
 
     set({ loading: true, error: null });
     try {
-      const newBranch: Branch = {
+      const newRef = doc(collection(db, 'branches'));
+      const newBranch = {
         ...data,
-        id: `BR-${Date.now()}`,
+        id: newRef.id,
         companyId: user.companyId,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       };
 
+      await setDoc(newRef, newBranch);
       set(state => ({
-        branches: [...state.branches, newBranch],
+        branches: [...state.branches, newBranch as any],
         loading: false
       }));
     } catch (error: any) {

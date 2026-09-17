@@ -1,149 +1,121 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
+import { db } from '../../core/firebase/config';
+import { collection, doc, query, where, serverTimestamp, getDocs, orderBy, runTransaction } from 'firebase/firestore';
+import { useCashSessionStore } from './useCashSessionStore';
 
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'DEPOSIT_IN' | 'DEPOSIT_OUT';
 export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER';
 
 export interface CashTransaction {
   id: string;
-  cashRegisterId: string;
+  cashSessionId: string;
   companyId: string;
+  branchId: string;
   type: TransactionType;
   amount: number;
+  currency?: string;
+  originalAmount?: number;
+  exchangeRateAtCreation?: number;
+  baseCurrencyAmount?: number;
   method: PaymentMethod;
   description: string;
-  referenceId?: string; // ContractId o InvoiceId
+  referenceId?: string;
   userId: string;
-  createdAt: Date;
-}
-
-export interface CashRegister {
-  id: string;
-  companyId: string;
-  branchId?: string;
-  openedBy: string; // UserId
-  openedAt: Date;
-  closedAt?: Date;
-  closedBy?: string;
-  status: 'OPEN' | 'CLOSED';
-  initialBalance: number;
-  expectedBalance?: number;
-  actualBalance?: number;
-  discrepancy?: number;
-  totalIncome: number;
-  totalExpense: number;
-  totalDeposits: number; // Depósitos retenidos
-  totalDepositsReturned: number;
+  createdAt: any;
 }
 
 interface CashState {
-  currentRegister: CashRegister | null;
   transactions: CashTransaction[];
   loading: boolean;
   error: string | null;
-  fetchCurrentRegister: () => Promise<void>;
-  openRegister: (initialBalance: number) => Promise<void>;
-  closeRegister: (actualBalance: number) => Promise<void>;
-  addTransaction: (data: Omit<CashTransaction, 'id' | 'cashRegisterId' | 'companyId' | 'userId' | 'createdAt'>) => Promise<void>;
+  fetchTransactions: (sessionId: string) => Promise<void>;
+  addTransaction: (data: Omit<CashTransaction, 'id' | 'cashSessionId' | 'companyId' | 'userId' | 'createdAt'>) => Promise<void>;
 }
 
-export const useCashStore = create<CashState>((set, get) => ({
-  currentRegister: null,
+export const useCashStore = create<CashState>((set) => ({
   transactions: [],
   loading: false,
   error: null,
 
-  fetchCurrentRegister: async () => {
-    const { user } = useAuthStore.getState();
-    if (!user?.companyId) return;
-
+  fetchTransactions: async (sessionId) => {
     set({ loading: true, error: null });
     try {
-      // Mock fetching an open register
-      // En la vida real, consultamos Firestore para ver si hay caja abierta hoy para este branch
-      set({ loading: false });
+      const txQuery = query(
+        collection(db, 'cashTransactions'),
+        where('cashSessionId', '==', sessionId),
+        orderBy('createdAt', 'desc')
+      );
+      const txSnapshot = await getDocs(txQuery);
+      const transactions = txSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as CashTransaction));
+
+      set({ transactions, loading: false });
     } catch (error: any) {
       set({ error: error.message, loading: false });
-    }
-  },
-
-  openRegister: async (initialBalance) => {
-    const { user } = useAuthStore.getState();
-    if (!user?.companyId) throw new Error('No company ID');
-
-    set({ loading: true, error: null });
-    try {
-      const newRegister: CashRegister = {
-        id: `CR-${Date.now()}`,
-        companyId: user.companyId,
-        openedBy: user.uid,
-        openedAt: new Date(),
-        status: 'OPEN',
-        initialBalance,
-        totalIncome: 0,
-        totalExpense: 0,
-        totalDeposits: 0,
-        totalDepositsReturned: 0
-      };
-      set({ currentRegister: newRegister, loading: false });
-    } catch (error: any) {
-      set({ error: error.message, loading: false });
-      throw error;
-    }
-  },
-
-  closeRegister: async (_actualBalance) => {
-    const register = get().currentRegister;
-    if (!register) throw new Error('No open register');
-
-    set({ loading: true, error: null });
-    try {
-      
-      // const expected = register.initialBalance + register.totalIncome - register.totalExpense + register.totalDeposits - register.totalDepositsReturned;
-      
-      // const closedRegister: CashRegister = {
-      //   ...register,
-      //   status: 'CLOSED',
-      //   closedAt: new Date(),
-      //   closedBy: user?.uid,
-      //   expectedBalance: expected,
-      //   actualBalance: _actualBalance,
-      //   discrepancy: _actualBalance - expected
-      // };
-
-      set({ currentRegister: null, loading: false });
-      // Here we would save to Firestore history
-    } catch (error: any) {
-      set({ error: error.message, loading: false });
-      throw error;
     }
   },
 
   addTransaction: async (data) => {
-    const register = get().currentRegister;
+    const { activeSession } = useCashSessionStore.getState();
     const { user } = useAuthStore.getState();
-    if (!register || !user?.companyId) throw new Error('No open register or company ID');
+    if (!activeSession || !user?.companyId) throw new Error('No hay turno activo o falta el ID de compañía');
 
     set({ loading: true, error: null });
     try {
-      const newTransaction: CashTransaction = {
+      const txRef = doc(collection(db, 'cashTransactions'));
+      
+      const newTransaction = {
         ...data,
-        id: `TR-${Date.now()}`,
-        cashRegisterId: register.id,
+        cashSessionId: activeSession.id,
         companyId: user.companyId,
         userId: user.uid,
-        createdAt: new Date(),
+        createdAt: serverTimestamp(),
       };
 
-      const updateRegister = { ...register };
-      if (data.type === 'INCOME') updateRegister.totalIncome += data.amount;
-      if (data.type === 'EXPENSE') updateRegister.totalExpense += data.amount;
-      if (data.type === 'DEPOSIT_IN') updateRegister.totalDeposits += data.amount;
-      if (data.type === 'DEPOSIT_OUT') updateRegister.totalDepositsReturned += data.amount;
+      // Cálculo del monto en DOP (Moneda Base)
+      let amountInDOP = data.amount;
+      if (data.currency && data.currency !== 'DOP' && data.originalAmount && data.exchangeRateAtCreation) {
+        amountInDOP = data.originalAmount * data.exchangeRateAtCreation;
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const sessionRef = doc(db, 'cashSessions', activeSession.id);
+        const sessionDoc = await transaction.get(sessionRef);
+
+        if (!sessionDoc.exists()) {
+          throw new Error("El turno ya no existe.");
+        }
+        
+        const sessionData = sessionDoc.data();
+        let { expectedCash, expectedCard, expectedTransfer } = sessionData;
+
+        // Sumar o restar según el método de pago
+        // Asumimos que los EGRESOS se hacen de la caja física (CASH)
+        const isIncome = (data.type === 'INCOME' || data.type === 'DEPOSIT_IN');
+        const modifier = isIncome ? 1 : -1;
+
+        if (data.method === 'CASH') {
+          expectedCash += (amountInDOP * modifier);
+        } else if (data.method === 'CARD' && isIncome) {
+          expectedCard += amountInDOP;
+        } else if (data.method === 'TRANSFER' && isIncome) {
+          expectedTransfer += amountInDOP;
+        }
+
+        // Crear la transacción
+        transaction.set(txRef, newTransaction);
+
+        // Actualizar el turno de caja
+        transaction.update(sessionRef, {
+          expectedCash,
+          expectedCard,
+          expectedTransfer,
+          updatedAt: new Date().toISOString()
+        });
+      });
 
       set(state => ({
-        transactions: [newTransaction, ...state.transactions],
-        currentRegister: updateRegister,
+        transactions: [{ ...newTransaction, id: txRef.id } as CashTransaction, ...state.transactions],
         loading: false
       }));
     } catch (error: any) {

@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 
-
+import { db } from '../../core/firebase/config';
+import { collection, doc, setDoc, query, where, getDocs } from 'firebase/firestore';
 export interface TrafficFine {
   id: string;
   vehicleId: string;
   contractId?: string;
   customerId?: string;
   amount: number;
-  date: Date;
+  date: any;
   description: string;
   status: 'PENDING' | 'PAID' | 'DISPUTED';
 }
@@ -17,7 +18,7 @@ export interface AccidentReport {
   vehicleId: string;
   contractId?: string;
   customerId?: string;
-  date: Date;
+  date: any;
   location: string;
   description: string;
   status: 'REPORTED' | 'INVESTIGATION' | 'INSURANCE' | 'REPAIRING' | 'RESOLVED';
@@ -43,21 +44,18 @@ export const useFleetOpsStore = create<FleetOpsState>((set) => ({
   fetchOpsData: async (vehicleId) => {
     set({ loading: true, error: null });
     try {
-      // Simular carga
-      set({ 
-        fines: [
-          {
-            id: 'F-001',
-            vehicleId,
-            amount: 1500,
-            date: new Date(),
-            description: 'Exceso de velocidad en Autopista Duarte',
-            status: 'PENDING'
-          }
-        ],
-        accidents: [],
-        loading: false 
-      });
+      const finesQuery = query(collection(db, 'fines'), where('vehicleId', '==', vehicleId));
+      const accidentsQuery = query(collection(db, 'accidents'), where('vehicleId', '==', vehicleId));
+
+      const [finesSnapshot, accidentsSnapshot] = await Promise.all([
+        getDocs(finesQuery),
+        getDocs(accidentsQuery)
+      ]);
+
+      const fines = finesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TrafficFine));
+      const accidents = accidentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AccidentReport));
+
+      set({ fines, accidents, loading: false });
     } catch (error: any) {
       set({ error: error.message, loading: false });
     }
@@ -66,8 +64,10 @@ export const useFleetOpsStore = create<FleetOpsState>((set) => ({
   addFine: async (data) => {
     set({ loading: true, error: null });
     try {
-      const newFine = { ...data, id: `F-${Date.now()}` };
-      set(state => ({ fines: [...state.fines, newFine], loading: false }));
+      const newRef = doc(collection(db, 'fines'));
+      const newFine = { ...data, id: newRef.id, date: data.date instanceof Date ? data.date : new Date() };
+      await setDoc(newRef, newFine);
+      set(state => ({ fines: [...state.fines, newFine as any], loading: false }));
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;
@@ -77,8 +77,10 @@ export const useFleetOpsStore = create<FleetOpsState>((set) => ({
   addAccident: async (data) => {
     set({ loading: true, error: null });
     try {
-      const newAccident = { ...data, id: `A-${Date.now()}` };
-      set(state => ({ accidents: [...state.accidents, newAccident], loading: false }));
+      const newRef = doc(collection(db, 'accidents'));
+      const newAccident = { ...data, id: newRef.id, date: data.date instanceof Date ? data.date : new Date() };
+      await setDoc(newRef, newAccident);
+      set(state => ({ accidents: [...state.accidents, newAccident as any], loading: false }));
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;

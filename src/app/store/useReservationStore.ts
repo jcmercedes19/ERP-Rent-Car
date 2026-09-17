@@ -1,10 +1,12 @@
 import { create } from 'zustand';
-import { db } from '../../core/firebase/config';
+import { db, functions } from '../../core/firebase/config';
 import { collection, doc, setDoc, getDocs, query, where, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
 export interface Reservation {
   id: string;
   companyId: string;
+  branchId: string;
   customerId: string;
   vehicleId: string;
   startDate: string; // ISO string
@@ -16,6 +18,24 @@ export interface Reservation {
   deposit: number; // Security deposit
   totalEstimated: number; // subtotal + tax
   notes?: string;
+  preCheckInStatus?: 'pending' | 'completed' | 'expired';
+  preCheckInToken?: string;
+  preCheckInCompletedAt?: string | null;
+  preCheckInData?: {
+    driverLicenseNumber: string;
+    driverLicenseCountry: string;
+    driverLicenseExpiry: string;
+    driverLicensePhotoUrl: string;
+    idDocumentPhotoUrl: string;
+    customerFullName: string;
+    customerAddress: string;
+    customerSignatureUrl: string;
+    authorizedDrivers?: Array<{
+      name: string;
+      licenseNumber: string;
+      licenseExpiry: string;
+    }>;
+  } | null;
   createdAt: any;
 }
 
@@ -23,11 +43,13 @@ interface ReservationState {
   reservations: Reservation[];
   loading: boolean;
   error: string | null;
-  fetchReservations: (companyId: string) => Promise<void>;
+  fetchReservations: (companyId: string, branchId?: string | null) => Promise<void>;
   addReservation: (data: Omit<Reservation, 'id' | 'createdAt'>) => Promise<void>;
   updateReservationStatus: (id: string, status: Reservation['status']) => Promise<void>;
   updateReservation: (id: string, data: Partial<Reservation>) => Promise<void>;
   createPublicReservation: (data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'companyId'> & { companyId: string }) => Promise<void>;
+  generatePreCheckInLink: (reservationId: string) => Promise<string>;
+  completePreCheckIn: (reservationId: string, data: NonNullable<Reservation['preCheckInData']>) => Promise<void>;
 }
 
 export const useReservationStore = create<ReservationState>((set) => ({
@@ -35,10 +57,13 @@ export const useReservationStore = create<ReservationState>((set) => ({
   loading: false,
   error: null,
 
-  fetchReservations: async (companyId: string) => {
+  fetchReservations: async (companyId: string, branchId?: string | null) => {
     set({ loading: true, error: null });
     try {
-      const q = query(collection(db, 'reservations'), where('companyId', '==', companyId));
+      let q = query(collection(db, 'reservations'), where('companyId', '==', companyId));
+      if (branchId) {
+        q = query(collection(db, 'reservations'), where('companyId', '==', companyId), where('branchId', '==', branchId));
+      }
       const querySnapshot = await getDocs(q);
       const reservations = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Reservation));
       
@@ -142,6 +167,51 @@ export const useReservationStore = create<ReservationState>((set) => ({
       // because they don't have a logged-in listener state for the whole fleet.
       // But we can set loading to false.
       set({ loading: false });
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  generatePreCheckInLink: async (reservationId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const generateLinkFn = httpsCallable<{reservationId: string}, {token: string, reservationId: string}>(functions, 'generatePreCheckInLink');
+      const result = await generateLinkFn({ reservationId });
+      
+      const { token } = result.data;
+      
+      // Update local state optimisticly
+      set((state) => ({
+        reservations: state.reservations.map(r => r.id === reservationId ? { ...r, preCheckInStatus: 'pending', preCheckInToken: token } : r),
+        loading: false
+      }));
+
+      // Return the URL
+      return `${window.location.origin}/precheckin/${reservationId}/${token}`;
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  completePreCheckIn: async (reservationId: string, data: NonNullable<Reservation['preCheckInData']>) => {
+    set({ loading: true, error: null });
+    try {
+      const ref = doc(db, 'reservations', reservationId);
+      const updateData = {
+        preCheckInStatus: 'completed' as const,
+        preCheckInCompletedAt: new Date().toISOString(),
+        preCheckInData: data,
+        updatedAt: serverTimestamp(),
+      };
+      
+      await updateDoc(ref, updateData);
+
+      set((state) => ({
+        reservations: state.reservations.map(r => r.id === reservationId ? { ...r, ...updateData } : r),
+        loading: false
+      }));
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;

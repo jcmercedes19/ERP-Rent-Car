@@ -2,8 +2,9 @@ import { useState, useRef } from "react";
 import { GlassModal } from "../../../shared/components/ui/GlassModal";
 import { Button } from "../../../shared/components/ui/Button";
 import { Input } from "../../../shared/components/ui/Input";
-import { Car, Fuel, Activity, ClipboardCheck, AlertTriangle } from "lucide-react";
+import { Car, Fuel, Activity, ClipboardCheck, AlertTriangle, UploadCloud, X, Camera } from "lucide-react";
 import SignatureCanvas from 'react-signature-canvas';
+import { compressImage } from "../../../core/utils/imageUtils";
 
 interface InspectionFormProps {
   isOpen: boolean;
@@ -33,8 +34,11 @@ export const InspectionForm = ({ isOpen, onClose, reservation, vehicle, type, on
     checklist: {} as Record<string, boolean>,
     damages: [] as string[],
     damageNotes: "",
+    evidenceImages: [] as string[],
     signature: null as string | null
   });
+
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleToggleChecklist = (id: string) => {
     setFormData(prev => ({
@@ -54,6 +58,35 @@ export const InspectionForm = ({ isOpen, onClose, reservation, vehicle, type, on
 
   const clearSignature = () => {
     sigPad.current?.clear();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const files = Array.from(e.target.files);
+      const compressedImages = await Promise.all(
+        files.map(file => compressImage(file, 800, 0.6)) // Reducimos resolución para evidencias
+      );
+      
+      setFormData(prev => ({
+        ...prev,
+        evidenceImages: [...prev.evidenceImages, ...compressedImages]
+      }));
+    } catch (error) {
+      console.error("Error compressing images:", error);
+      alert("Error al procesar algunas imágenes. Intente nuevamente.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeEvidenceImage = (indexToRemove: number) => {
+    setFormData(prev => ({
+      ...prev,
+      evidenceImages: prev.evidenceImages.filter((_, index) => index !== indexToRemove)
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -195,6 +228,42 @@ export const InspectionForm = ({ isOpen, onClose, reservation, vehicle, type, on
           </div>
         </div>
 
+        {/* Evidencia Fotográfica */}
+        <div className="space-y-3">
+          <h4 className="font-medium text-foreground flex items-center gap-2">
+            <Camera size={18} /> Evidencia Fotográfica (Fotos del Vehículo)
+          </h4>
+          <div className="glass p-4 rounded-xl">
+            {formData.evidenceImages.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                {formData.evidenceImages.map((imgBase64, idx) => (
+                  <div key={idx} className="relative group rounded-lg overflow-hidden border border-border/50 bg-background/50 aspect-video">
+                    <img src={imgBase64} alt={`Evidencia ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeEvidenceImage(idx)}
+                      className="absolute top-1 right-1 bg-black/50 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500"
+                      title="Eliminar imagen"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center justify-center w-full">
+              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-border/50 border-dashed rounded-lg cursor-pointer hover:bg-background/50 transition-colors">
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <UploadCloud className="w-6 h-6 mb-2 text-primary/70" />
+                  <p className="text-xs text-foreground/80">Subir fotos (Frente, Lados, Trasero)</p>
+                </div>
+                <input type="file" className="hidden" multiple accept="image/*" onChange={handleFileChange} disabled={isUploading} />
+              </label>
+            </div>
+            {isUploading && <p className="text-xs text-primary mt-2 animate-pulse">Comprimiendo fotos...</p>}
+          </div>
+        </div>
+
         {/* Firma Digital */}
         <div className="space-y-3">
           <div className="flex justify-between items-end">
@@ -212,7 +281,7 @@ export const InspectionForm = ({ isOpen, onClose, reservation, vehicle, type, on
 
         <div className="pt-4 flex justify-end gap-3 border-t border-border mt-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancelar</Button>
-          <Button type="submit">
+          <Button type="submit" loading={isUploading} disabled={isUploading}>
             {type === 'CHECK_OUT' ? 'Autorizar Salida (Despachar)' : 'Confirmar Recepción'}
           </Button>
         </div>

@@ -20,7 +20,7 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
   const { customers, fetchCustomers } = useCustomerStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
   const { templates, fetchTemplates } = useContractTemplateStore();
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
 
   const [formData, setFormData] = useState({
     customerId: "",
@@ -156,7 +156,11 @@ export const ContractForm = ({ isOpen, onClose, contractToEdit }: ContractFormPr
       if (contractToEdit) {
         await updateContract(contractToEdit.id, formData);
       } else {
-        await addContract({ ...formData, snapshotContent, companyId: activeCompany.id });
+        if (!activeBranchId) {
+          alert("Error: Seleccione una sucursal activa primero.");
+          return;
+        }
+        await addContract({ ...formData, snapshotContent, companyId: activeCompany.id, branchId: activeBranchId });
       }
       onClose();
     } catch (error: any) {

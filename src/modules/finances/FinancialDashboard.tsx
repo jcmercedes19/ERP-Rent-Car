@@ -12,6 +12,9 @@ export const FinancialDashboard = () => {
     if (activeCompany?.id) {
       fetchFinances(activeCompany.id);
     }
+    return () => {
+      useFinanceStore.getState().unsubscribeFinances();
+    };
   }, [activeCompany?.id, fetchFinances]);
 
   // Derived calculations based on BUSINESS_RULES.md

@@ -17,10 +17,12 @@ import { MaintenancePanel } from '../../modules/fleet/MaintenancePanel';
 import { PublicLayout } from '../../shared/layouts/PublicLayout';
 import { BookingPortal } from '../../modules/public/BookingPortal';
 import { CompanyDirectory } from '../../modules/public/CompanyDirectory';
-import { CashRegisterPanel } from '../../modules/finances/CashRegisterPanel';
+import { PreCheckInForm } from '../../modules/public/PreCheckInForm';
+import { CierreCaja } from '../../modules/finances/CierreCaja';
 import { InvoicingPanel } from '../../modules/finances/InvoicingPanel';
 import { BranchManager } from '../../modules/settings/BranchManager';
 import { UserManager } from '../../modules/settings/UserManager';
+import { PaymentSettings } from '../../modules/settings/PaymentSettings';
 
 export const router = createBrowserRouter([
   {
@@ -44,6 +46,10 @@ export const router = createBrowserRouter([
         element: <BookingPortal />
       }
     ]
+  },
+  {
+    path: '/precheckin/:reservationId/:token',
+    element: <PreCheckInForm />
   },
   {
     path: '/',
@@ -70,6 +76,10 @@ export const router = createBrowserRouter([
               {
                 path: 'users',
                 element: <UserManager />,
+              },
+              {
+                path: 'payments',
+                element: <PaymentSettings />,
               },
             ],
           },
@@ -107,7 +117,7 @@ export const router = createBrowserRouter([
           },
           {
             path: 'finances/cash',
-            element: <CashRegisterPanel />,
+            element: <CierreCaja />,
           },
           {
             path: 'finances/invoicing',

@@ -9,7 +9,7 @@ import { Button } from "../../shared/components/ui/Button";
 import { Search, Wrench, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
 export const MaintenancePanel = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { vehicles, fetchVehicles, updateVehicle } = useVehicleStore();
   const { records, fetchRecords, addRecord } = useMaintenanceStore();
   const { addExpense } = useFinanceStore();
@@ -19,9 +19,12 @@ export const MaintenancePanel = () => {
 
   useEffect(() => {
     if (activeCompany?.id) {
-      fetchVehicles(activeCompany.id);
+      fetchVehicles(activeCompany.id, activeBranchId);
       fetchRecords(activeCompany.id);
     }
+    return () => {
+      useMaintenanceStore.getState().unsubscribeRecords();
+    };
   }, [activeCompany?.id, fetchVehicles, fetchRecords]);
 
   // Analyzes fleet health

@@ -4,7 +4,9 @@ import { Input } from "../../../shared/components/ui/Input";
 import { Button } from "../../../shared/components/ui/Button";
 import { useVehicleStore, type Vehicle } from "../../../app/store/useVehicleStore";
 import { useTenantStore } from "../../../app/store/useTenantStore";
-import { Car, Hash, DollarSign, Activity, Image as ImageIcon, PaintBucket, Gauge, Settings2, Calendar } from "lucide-react";
+import { Car, Hash, DollarSign, Activity, Image as ImageIcon, PaintBucket, Gauge, Settings2, Calendar, UploadCloud, X } from "lucide-react";
+import { compressImage } from "../../../core/utils/imageUtils";
+
 
 interface VehicleFormProps {
   isOpen: boolean;
@@ -14,7 +16,7 @@ interface VehicleFormProps {
 
 export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps) => {
   const { addVehicle, updateVehicle, loading } = useVehicleStore();
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
 
   const [formData, setFormData] = useState({
     brand: "",
@@ -28,8 +30,12 @@ export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps
     imageUrl: "",
     color: "",
     transmission: "AUTO" as "AUTO" | "MANUAL",
-    fuelType: "GASOLINE" as "GASOLINE" | "DIESEL" | "ELECTRIC" | "HYBRID",
+    fuelType: "GASOLINE" as Vehicle["fuelType"],
   });
+
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (vehicleToEdit) {
@@ -47,19 +53,30 @@ export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps
         transmission: vehicleToEdit.transmission || "AUTO",
         fuelType: vehicleToEdit.fuelType || "GASOLINE",
       });
+      setImageFile(null);
+      setImagePreview(vehicleToEdit.imageUrl || "");
     } else {
       setFormData({
         brand: "", model: "", year: new Date().getFullYear(), plate: "",
         category: "ECONOMY", status: "AVAILABLE", dailyRate: 0, currentMileage: 0,
         imageUrl: "", color: "", transmission: "AUTO", fuelType: "GASOLINE",
       });
+      setImageFile(null);
+      setImagePreview("");
     }
   }, [vehicleToEdit, isOpen]);
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
+    setFormData((prev) => ({      ...prev, 
       [name]: type === 'number' ? Number(value) : value 
     }));
   };
@@ -72,13 +89,26 @@ export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps
     }
 
     try {
+      let finalImageUrl = formData.imageUrl;
+      if (imageFile) {
+        setUploadingImage(true);
+        // Generamos un string base64 comprimido usando la utilidad compartida
+        finalImageUrl = await compressImage(imageFile, 600, 0.6);
+        setUploadingImage(false);
+      }
+
       if (vehicleToEdit) {
-        await updateVehicle(vehicleToEdit.id, formData);
+        await updateVehicle(vehicleToEdit.id, { ...formData, imageUrl: finalImageUrl });
       } else {
-        await addVehicle({ ...formData, companyId: activeCompany.id });
+        if (!activeBranchId) {
+          alert("Error: Seleccione una sucursal activa primero.");
+          return;
+        }
+        await addVehicle({ ...formData, companyId: activeCompany.id, branchId: activeBranchId, imageUrl: finalImageUrl });
       }
       onClose();
     } catch (error: any) {
+      setUploadingImage(false);
       console.error("Error saving vehicle:", error);
       alert(`Ocurrió un error al guardar: ${error.message}`);
     }
@@ -163,14 +193,40 @@ export const VehicleForm = ({ isOpen, onClose, vehicleToEdit }: VehicleFormProps
         </div>
 
         <div className="pt-4 border-t border-border/50">
-          <Input label="URL Foto del Vehículo (Opcional)" name="imageUrl" value={formData.imageUrl} onChange={handleChange} icon={<ImageIcon size={18} />} placeholder="https://..." />
+          <h3 className="text-lg font-semibold text-foreground mb-4">Fotografía del Vehículo</h3>
+          <div className="flex items-center gap-4">
+            {(imagePreview || formData.imageUrl) ? (
+              <div className="relative w-24 h-24 rounded-xl border border-border overflow-hidden bg-background/50 flex-shrink-0">
+                <img src={imagePreview || formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <button type="button" onClick={() => { setImageFile(null); setImagePreview(""); setFormData(p => ({ ...p, imageUrl: "" })); }} className="absolute top-1 right-1 bg-black/50 rounded-full p-1 text-white hover:bg-black/70">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div className="w-24 h-24 rounded-xl border border-dashed border-border flex flex-col items-center justify-center text-muted-foreground bg-background/20 flex-shrink-0">
+                <ImageIcon size={24} className="mb-2 opacity-50" />
+                <span className="text-[10px] text-center px-2">Sin imagen</span>
+              </div>
+            )}
+            
+            <div className="flex-1">
+              <label className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary/10 px-4 text-sm font-medium text-primary transition-all hover:bg-primary/20">
+                <UploadCloud size={18} />
+                <span>{imageFile ? "Cambiar Imagen" : "Subir Imagen"}</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+              </label>
+              <p className="text-xs text-muted-foreground mt-2">
+                Formatos soportados: JPG, PNG, WEBP. Tamaño máx recomendado: 2MB.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="pt-6 border-t border-border/50 flex justify-end gap-3">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading || uploadingImage} disabled={uploadingImage}>
             {vehicleToEdit ? "Guardar Cambios" : "Guardar Vehículo"}
           </Button>
         </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
+import { useBranchStore } from '../../app/store/useBranchStore';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, CalendarDays, Key, Wrench, Globe, Building } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
@@ -9,7 +10,14 @@ import { signOut } from 'firebase/auth';
 
 export const AppLayout: React.FC = () => {
   const { user } = useAuthStore();
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId, setActiveBranch } = useTenantStore();
+  const { branches, fetchBranches } = useBranchStore();
+
+  React.useEffect(() => {
+    if (activeCompany?.id) {
+      fetchBranches();
+    }
+  }, [activeCompany?.id]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -146,6 +154,10 @@ export const AppLayout: React.FC = () => {
                 <Settings size={18} />
                 Roles y Usuarios
               </Link>
+              <Link to="/settings/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <CreditCard size={18} />
+                Pasarela de Pagos
+              </Link>
             </>
           )}
         </nav>
@@ -165,8 +177,23 @@ export const AppLayout: React.FC = () => {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <header className="h-16 border-b border-border bg-card/80 backdrop-blur-md flex items-center justify-between px-6 z-10 sticky top-0">
-          <div className="font-medium text-muted-foreground text-sm">
-            {activeCompany ? `Sucursal Principal` : 'Cargando contexto...'}
+          <div className="font-medium text-muted-foreground text-sm flex items-center gap-2">
+            {activeCompany ? (
+              <>
+                <Building size={16} />
+                <select 
+                  className="bg-transparent border-none outline-none cursor-pointer hover:text-foreground transition-colors font-medium text-sm p-0 m-0"
+                  value={activeBranchId || ''}
+                  onChange={(e) => setActiveBranch(e.target.value)}
+                  disabled={!isAdmin && branches.length <= 1}
+                >
+                  <option value="" disabled>Seleccione una sucursal</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>{b.name}</option>
+                  ))}
+                </select>
+              </>
+            ) : 'Cargando contexto...'}
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />

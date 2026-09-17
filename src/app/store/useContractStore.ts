@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { db } from '../../core/firebase/config';
-import { collection, doc, setDoc, getDocs, query, where, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, updateDoc, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 export interface RentalContract {
   id: string;
   companyId: string;
+  branchId: string;
   customerId: string;
   vehicleId: string;
   templateId?: string;
@@ -18,6 +19,10 @@ export interface RentalContract {
   subtotal: number;
   depositAmount: number;
   totalAmount: number;
+  currency?: string;
+  originalAmount?: number;
+  exchangeRateAtCreation?: number;
+  baseCurrencyAmount?: number;
   notes?: string;
   createdAt: any;
   updatedAt: any;
@@ -27,30 +32,47 @@ interface ContractState {
   contracts: RentalContract[];
   loading: boolean;
   error: string | null;
-  fetchContracts: (companyId: string) => Promise<void>;
+  unsubscribeSnapshot: (() => void) | null;
+  fetchContracts: (companyId: string, branchId?: string | null) => void;
   addContract: (data: Omit<RentalContract, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateContract: (id: string, data: Partial<RentalContract>) => Promise<void>;
   deleteContract: (id: string) => Promise<void>;
 }
 
-export const useContractStore = create<ContractState>((set) => ({
+export const useContractStore = create<ContractState>((set, get) => ({
   contracts: [],
   loading: false,
   error: null,
+  unsubscribeSnapshot: null,
 
-  fetchContracts: async (companyId: string) => {
+  fetchContracts: (companyId: string, branchId?: string | null) => {
+    const existingUnsubscribe = get().unsubscribeSnapshot;
+    if (existingUnsubscribe) {
+      existingUnsubscribe();
+    }
+
     set({ loading: true, error: null });
+    
     try {
-      const q = query(collection(db, 'rentalContracts'), where('companyId', '==', companyId));
-      const querySnapshot = await getDocs(q);
-      const contracts = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentalContract));
-      // Ordenar por fecha de creación (más recientes primero) asumiendo createdAt es Timestamp, pero si no, es en cliente
-      contracts.sort((a, b) => {
-        const dateA = a.createdAt?.seconds || 0;
-        const dateB = b.createdAt?.seconds || 0;
-        return dateB - dateA;
+      let q = query(collection(db, 'rentalContracts'), where('companyId', '==', companyId));
+      if (branchId) {
+        q = query(collection(db, 'rentalContracts'), where('companyId', '==', companyId), where('branchId', '==', branchId));
+      }
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const contracts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RentalContract));
+        // Ordenar por fecha de creación (más recientes primero) asumiendo createdAt es Timestamp, pero si no, es en cliente
+        contracts.sort((a, b) => {
+          const dateA = a.createdAt?.seconds || 0;
+          const dateB = b.createdAt?.seconds || 0;
+          return dateB - dateA;
+        });
+        set({ contracts, loading: false });
+      }, (error) => {
+        set({ error: error.message, loading: false });
       });
-      set({ contracts, loading: false });
+
+      set({ unsubscribeSnapshot: unsubscribe });
     } catch (error: any) {
       set({ error: error.message, loading: false });
     }

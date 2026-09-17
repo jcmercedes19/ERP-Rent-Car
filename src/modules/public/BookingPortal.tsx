@@ -108,6 +108,7 @@ export const BookingPortal = () => {
 
       await createPublicReservation({
         companyId,
+        branchId: selectedVehicle.branchId,
         customerId: customerRef.id,
         vehicleId: selectedVehicle.id,
         startDate: new Date(startDate).toISOString(),

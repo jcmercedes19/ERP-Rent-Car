@@ -18,6 +18,7 @@ interface TenantState {
   activeBranchId: string | null;
   memberships: Membership[];
   setTenantContext: (company: Company, branchId: string) => void;
+  setActiveBranch: (branchId: string) => void;
   setMemberships: (memberships: Membership[]) => void;
   clearTenant: () => void;
 }
@@ -27,6 +28,7 @@ export const useTenantStore = create<TenantState>((set) => ({
   activeBranchId: null,
   memberships: [],
   setTenantContext: (company, branchId) => set({ activeCompany: company, activeBranchId: branchId }),
+  setActiveBranch: (branchId) => set({ activeBranchId: branchId }),
   setMemberships: (memberships) => set({ memberships }),
   clearTenant: () => set({ activeCompany: null, activeBranchId: null, memberships: [] }),
 }));

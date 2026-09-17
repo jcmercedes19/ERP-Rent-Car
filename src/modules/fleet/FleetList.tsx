@@ -8,7 +8,7 @@ import { VehicleForm } from "./components/VehicleForm";
 import { VehicleOperationsModal } from "./components/VehicleOperationsModal";
 
 export const FleetList = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { vehicles, fetchVehicles, deleteVehicle, loading } = useVehicleStore();
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -19,7 +19,7 @@ export const FleetList = () => {
 
   useEffect(() => {
     if (activeCompany?.id) {
-      fetchVehicles(activeCompany.id);
+      fetchVehicles(activeCompany.id, activeBranchId);
     }
   }, [activeCompany?.id, fetchVehicles]);
 

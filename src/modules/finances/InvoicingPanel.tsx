@@ -3,14 +3,19 @@ import { useBillingStore } from '../../app/store/useBillingStore';
 import { GlassTable } from '../../shared/components/ui/GlassTable';
 import { formatCurrency } from '../../core/utils/formatters';
 import { FileText, Printer, CheckCircle, XCircle } from 'lucide-react';
+import { useTenantStore } from '../../app/store/useTenantStore';
 import { format } from 'date-fns';
 
 export function InvoicingPanel() {
   const { invoices, fetchInvoices } = useBillingStore();
 
+  const { activeCompany, activeBranchId } = useTenantStore();
+
   useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
+    if (activeCompany) {
+      fetchInvoices(activeCompany.id, activeBranchId);
+    }
+  }, [fetchInvoices, activeCompany, activeBranchId]);
 
   const columns = [
     {

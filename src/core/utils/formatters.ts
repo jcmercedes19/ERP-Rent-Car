@@ -1,6 +1,6 @@
-export const formatCurrency = (value: number) => {
+export const formatCurrency = (value: number, currencyCode: string = 'DOP') => {
   return new Intl.NumberFormat('es-DO', {
     style: 'currency',
-    currency: 'DOP'
+    currency: currencyCode
   }).format(value);
 };

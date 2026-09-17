@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from '../../core/firebase/config';
-import { collection, doc, setDoc, getDocs, query, where, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 export interface Payment {
   id: string;
@@ -29,12 +29,16 @@ interface FinanceState {
   expenses: Expense[];
   loading: boolean;
   error: string | null;
-  fetchFinances: (companyId: string) => Promise<void>;
+  fetchFinances: (companyId: string) => void;
+  unsubscribeFinances: () => void;
   addPayment: (data: Omit<Payment, 'id' | 'createdAt'>) => Promise<void>;
   deletePayment: (id: string) => Promise<void>;
   addExpense: (data: Omit<Expense, 'id' | 'createdAt'>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
 }
+
+let paymentsUnsubscribe: (() => void) | null = null;
+let expensesUnsubscribe: (() => void) | null = null;
 
 export const useFinanceStore = create<FinanceState>((set) => ({
   payments: [],
@@ -42,27 +46,39 @@ export const useFinanceStore = create<FinanceState>((set) => ({
   loading: false,
   error: null,
 
-  fetchFinances: async (companyId: string) => {
-    set({ loading: true, error: null });
-    try {
-      // Fetch Payments
-      const qPayments = query(collection(db, 'payments'), where('companyId', '==', companyId));
-      const paySnapshot = await getDocs(qPayments);
-      const payments = paySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-      
-      // Fetch Expenses
-      const qExpenses = query(collection(db, 'expenses'), where('companyId', '==', companyId));
-      const expSnapshot = await getDocs(qExpenses);
-      const expenses = expSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
-
-      // Ordenar por más recientes
-      payments.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-      set({ payments, expenses, loading: false });
-    } catch (error: any) {
-      set({ error: error.message, loading: false });
+  unsubscribeFinances: () => {
+    if (paymentsUnsubscribe) {
+      paymentsUnsubscribe();
+      paymentsUnsubscribe = null;
     }
+    if (expensesUnsubscribe) {
+      expensesUnsubscribe();
+      expensesUnsubscribe = null;
+    }
+  },
+
+  fetchFinances: (companyId: string) => {
+    set({ loading: true, error: null });
+
+    // Payments Snapshot
+    const qPayments = query(collection(db, 'payments'), where('companyId', '==', companyId));
+    paymentsUnsubscribe = onSnapshot(qPayments, (snapshot) => {
+      const payments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
+      payments.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      set({ payments, loading: false });
+    }, (error: any) => {
+      set({ error: error.message, loading: false });
+    });
+
+    // Expenses Snapshot
+    const qExpenses = query(collection(db, 'expenses'), where('companyId', '==', companyId));
+    expensesUnsubscribe = onSnapshot(qExpenses, (snapshot) => {
+      const expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Expense));
+      expenses.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      set({ expenses, loading: false });
+    }, (error: any) => {
+      set({ error: error.message, loading: false });
+    });
   },
 
   addPayment: async (data) => {

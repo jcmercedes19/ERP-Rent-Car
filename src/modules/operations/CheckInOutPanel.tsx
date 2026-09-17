@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
-import { useReservationStore } from "../../app/store/useReservationStore";
+import { useReservationStore, type Reservation } from "../../app/store/useReservationStore";
 import { useVehicleStore } from "../../app/store/useVehicleStore";
 import { useCustomerStore } from "../../app/store/useCustomerStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { useFinanceStore } from "../../app/store/useFinanceStore";
 import { InspectionForm } from "./components/InspectionForm";
-import { Search, LogOut, LogIn, Clock } from "lucide-react";
+import { PaymentModal } from "./components/PaymentModal";
+import { Search, LogIn, LogOut, Clock, AlertTriangle, CheckCircle, CreditCard } from 'lucide-react';
 
 export const CheckInOutPanel = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { reservations, fetchReservations, updateReservationStatus } = useReservationStore();
   const { vehicles, fetchVehicles, updateVehicle } = useVehicleStore();
   const { customers, fetchCustomers } = useCustomerStore();
@@ -16,18 +17,46 @@ export const CheckInOutPanel = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeInspection, setActiveInspection] = useState<{
-    reservation: any;
+    reservation: Reservation;
     vehicle: any;
     type: 'CHECK_IN' | 'CHECK_OUT';
   } | null>(null);
+  const [sharingLinkId, setSharingLinkId] = useState<string | null>(null);
+  const [activePaymentReservation, setActivePaymentReservation] = useState<Reservation | null>(null);
 
   useEffect(() => {
     if (activeCompany?.id) {
-      fetchReservations(activeCompany.id);
-      fetchVehicles(activeCompany.id);
+      fetchReservations(activeCompany.id, activeBranchId);
+      fetchVehicles(activeCompany.id, activeBranchId);
       fetchCustomers(activeCompany.id);
     }
   }, [activeCompany?.id, fetchReservations, fetchVehicles, fetchCustomers]);
+
+  const handleSharePreCheckIn = async (res: Reservation, customer: any) => {
+    try {
+      setSharingLinkId(res.id);
+      let url = '';
+      if (res.preCheckInToken) {
+        url = `${window.location.origin}/precheckin/${res.id}/${res.preCheckInToken}`;
+      } else {
+        url = await useReservationStore.getState().generatePreCheckInLink(res.id);
+      }
+      
+      if (customer?.phone) {
+        const cleanPhone = customer.phone.replace(/\D/g, '');
+        const message = `¡Hola! Antes de retirar tu vehículo, por favor completa tu Pre-Check-In requerido por el INTRANT aquí: ${url}`;
+        window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
+      } else {
+        // Fallback copy to clipboard
+        navigator.clipboard.writeText(url);
+        alert('Enlace copiado al portapapeles. El cliente no tiene teléfono configurado.');
+      }
+    } catch (e: any) {
+      alert("Error al generar el enlace: " + e.message);
+    } finally {
+      setSharingLinkId(null);
+    }
+  };
 
   // We are only interested in PENDING and CONFIRMED reservations for this panel, or reservations starting/ending "today"
   const activeReservations = reservations.filter(r => r.status === 'PENDING' || r.status === 'CONFIRMED');
@@ -143,8 +172,18 @@ export const CheckInOutPanel = () => {
                     {isPending ? <LogOut size={24} /> : <LogIn size={24} />}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-foreground text-lg">
+                    <h3 className="font-semibold text-foreground text-lg flex items-center gap-2">
                       {isPending ? 'Entrega de Vehículo (Check-Out)' : 'Recepción de Vehículo (Check-In)'}
+                      {res.preCheckInStatus === 'completed' && (
+                        <span className="bg-emerald-500/20 text-emerald-500 text-xs px-2 py-1 rounded-full border border-emerald-500/30 flex items-center gap-1">
+                          <CheckCircle size={12} /> Pre-Check-In Listo
+                        </span>
+                      )}
+                      {res.preCheckInStatus === 'pending' && (
+                        <span className="bg-yellow-500/20 text-yellow-500 text-xs px-2 py-1 rounded-full border border-yellow-500/30 flex items-center gap-1">
+                          <Clock size={12} /> Pre-Check-In Pnd.
+                        </span>
+                      )}
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1">
                       <span className="font-medium text-foreground">{customer?.firstName} {customer?.lastName}</span> • {vehicle?.brand} {vehicle?.model} ({vehicle?.plate})
@@ -152,13 +191,47 @@ export const CheckInOutPanel = () => {
                     <p className="text-xs text-muted-foreground mt-1">
                       Fechas: {new Date(res.startDate).toLocaleDateString()} - {new Date(res.endDate).toLocaleDateString()}
                     </p>
+                    
+                    {/* INTRANT Validation Warnings */}
+                    {res.preCheckInData && (
+                      <div className="mt-2 text-xs">
+                        {new Date(res.preCheckInData.driverLicenseExpiry) < new Date(res.startDate) ? (
+                          <p className="text-red-500 flex items-center gap-1"><AlertTriangle size={12}/> Vencimiento de Licencia ANTES del alquiler. <b>(NO AUTORIZADO)</b></p>
+                        ) : new Date(res.preCheckInData.driverLicenseExpiry) < new Date(res.endDate) ? (
+                          <p className="text-amber-500 flex items-center gap-1"><AlertTriangle size={12}/> Precaución: La licencia vence DURANTE el período de renta.</p>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  {isPending && res.preCheckInStatus !== 'completed' && (
+                    <button
+                      onClick={() => handleSharePreCheckIn(res, customer)}
+                      disabled={sharingLinkId === res.id}
+                      className="px-4 py-2 border border-primary text-primary rounded-lg text-sm font-medium hover:bg-primary/10 transition-colors flex items-center gap-2 w-full sm:w-auto justify-center"
+                    >
+                      {sharingLinkId === res.id ? 'Generando...' : 'Pedir Pre-Check-In'}
+                    </button>
+                  )}
+                  {isPending && (
+                    <button
+                      onClick={() => setActivePaymentReservation(res)}
+                      className="px-4 py-2 border border-blue-500 text-blue-500 rounded-lg text-sm font-medium hover:bg-blue-500/10 transition-colors flex items-center gap-2"
+                    >
+                      <CreditCard size={16} />
+                      Cobrar con Tarjeta
+                    </button>
+                  )}
                   {isPending ? (
-                    <button 
-                      onClick={() => setActiveInspection({ reservation: res, vehicle, type: 'CHECK_OUT' })}
+                    <button
+                      onClick={() => {
+                        if (res.preCheckInStatus !== 'completed') {
+                          if(!window.confirm("El cliente NO ha completado el Pre-Check-In digital obligatorio. ¿Desea continuar con el Check-Out manual bajo su responsabilidad?")) return;
+                        }
+                        setActiveInspection({ reservation: res, vehicle, type: 'CHECK_OUT' })
+                      }}
                       className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
                     >
                       <LogOut size={16} />
@@ -188,6 +261,14 @@ export const CheckInOutPanel = () => {
           vehicle={activeInspection.vehicle}
           type={activeInspection.type}
           onComplete={handleInspectionComplete}
+        />
+      )}
+
+      {activePaymentReservation && (
+        <PaymentModal
+          isOpen={!!activePaymentReservation}
+          onClose={() => setActivePaymentReservation(null)}
+          reservation={activePaymentReservation}
         />
       )}
     </div>

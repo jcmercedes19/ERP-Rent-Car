@@ -5,11 +5,11 @@ import { useVehicleStore } from "../../app/store/useVehicleStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { Button } from "../../shared/components/ui/Button";
-import { Plus, Search, Edit2, FileText } from "lucide-react";
+import { Plus, Search, Edit2, FileText, MessageCircle } from "lucide-react";
 import { ContractForm } from "./components/ContractForm";
 
 export const ContractList = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { contracts, fetchContracts, loading } = useContractStore();
   const { customers, fetchCustomers } = useCustomerStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
@@ -20,9 +20,9 @@ export const ContractList = () => {
 
   useEffect(() => {
     if (activeCompany?.id) {
-      fetchContracts(activeCompany.id);
+      fetchContracts(activeCompany.id, activeBranchId);
       fetchCustomers(activeCompany.id);
-      fetchVehicles(activeCompany.id);
+      fetchVehicles(activeCompany.id, activeBranchId);
     }
   }, [activeCompany?.id, fetchContracts, fetchCustomers, fetchVehicles]);
 
@@ -41,6 +41,11 @@ export const ContractList = () => {
     return c ? `${c.firstName} ${c.lastName}` : "Desconocido";
   };
 
+  const getCustomerPhone = (id: string) => {
+    const c = customers.find(c => c.id === id);
+    return c ? c.phone : "";
+  };
+
   const getVehicleName = (id: string) => {
     const v = vehicles.find(v => v.id === id);
     return v ? `${v.brand} ${v.model} (${v.plate})` : "Desconocido";
@@ -53,6 +58,18 @@ export const ContractList = () => {
     const vehicleMatch = getVehicleName(c.vehicleId).toLowerCase().includes(search);
     return customerMatch || vehicleMatch;
   });
+
+  const handleWhatsAppShare = (contract: RentalContract) => {
+    const phone = getCustomerPhone(contract.customerId);
+    if (!phone) {
+      alert("El cliente no tiene número de teléfono registrado.");
+      return;
+    }
+    const cleanPhone = phone.replace(/\D/g, ''); // Solo números
+    const message = `¡Hola! Tu reservación/contrato de alquiler (${contract.id.substring(0,8).toUpperCase()}) está confirmado. Puedes revisar los detalles y el estado en el siguiente enlace: ${window.location.origin}/booking/${activeCompany?.id}`;
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
 
   const getStatusBadge = (status: RentalContract["status"]) => {
     switch(status) {
@@ -101,6 +118,9 @@ export const ContractList = () => {
       header: "Acciones",
       cell: (row: RentalContract) => (
         <div className="flex gap-2">
+          <button onClick={() => handleWhatsAppShare(row)} className="p-2 text-emerald-500 hover:bg-emerald-500/10 rounded-full transition-colors" title="Compartir por WhatsApp">
+            <MessageCircle size={16} />
+          </button>
           <button onClick={() => handleEdit(row)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors" title="Ver / Editar">
             <Edit2 size={16} />
           </button>

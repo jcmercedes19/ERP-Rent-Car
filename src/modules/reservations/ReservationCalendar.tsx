@@ -24,7 +24,7 @@ const localizer = dateFnsLocalizer({
 });
 
 export const ReservationCalendar = () => {
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { reservations, fetchReservations } = useReservationStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
   const { customers, fetchCustomers } = useCustomerStore();
@@ -34,8 +34,8 @@ export const ReservationCalendar = () => {
 
   useEffect(() => {
     if (activeCompany?.id) {
-      fetchReservations(activeCompany.id);
-      fetchVehicles(activeCompany.id);
+      fetchReservations(activeCompany.id, activeBranchId);
+      fetchVehicles(activeCompany.id, activeBranchId);
       fetchCustomers(activeCompany.id);
     }
   }, [activeCompany?.id, fetchReservations, fetchVehicles, fetchCustomers]);

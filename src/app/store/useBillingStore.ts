@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import { useAuthStore } from './useAuthStore';
+import { db, functions } from '../../core/firebase/config';
+import { collection, addDoc, updateDoc, doc, query, where, onSnapshot } from 'firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
 
-// Tipos de Comprobantes Fiscales (Dominican Republic NCF / e-CF)
 export type NCFType = 'B01' | 'B02' | 'B14' | 'B15' | 'E31' | 'E32';
 
 export interface InvoiceItem {
@@ -16,83 +18,68 @@ export interface InvoiceItem {
 export interface Invoice {
   id: string;
   companyId: string;
-  contractId?: string; // Opcional si es factura de mostrador
+  branchId?: string;
+  contractId?: string;
   customerId: string;
   ncfType: NCFType;
-  ncfNumber: string; // Ej: B0100000001
+  ncfNumber: string;
   status: 'DRAFT' | 'ISSUED' | 'CANCELLED' | 'PAID';
-  issueDate: Date;
-  dueDate?: Date;
+  issueDate: string; // ISO string
+  dueDate?: string;  // ISO string
   subtotal: number;
-  taxTotal: number; // ITBIS
+  taxTotal: number;
   discount: number;
   total: number;
   items: InvoiceItem[];
   paymentMethod?: string;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
 }
 
 interface BillingState {
   invoices: Invoice[];
   loading: boolean;
   error: string | null;
-  fetchInvoices: () => Promise<void>;
+  fetchInvoices: (companyId: string, branchId?: string | null) => void;
   createInvoice: (data: Omit<Invoice, 'id' | 'companyId' | 'createdAt' | 'updatedAt' | 'ncfNumber'>) => Promise<string>;
   updateInvoiceStatus: (id: string, status: Invoice['status']) => Promise<void>;
 }
 
-// Lógica de simulación para generar el siguiente NCF de la secuencia
-const generateNextNCF = (type: NCFType, currentCount: number) => {
-  const sequence = String(currentCount + 1).padStart(8, '0');
-  return `${type}${sequence}`;
-};
-
-export const useBillingStore = create<BillingState>((set, get) => ({
+export const useBillingStore = create<BillingState>((set) => ({
   invoices: [],
   loading: false,
   error: null,
 
-  fetchInvoices: async () => {
-    const { user } = useAuthStore.getState();
-    if (!user?.companyId) return;
-
+  fetchInvoices: (companyId, branchId) => {
     set({ loading: true, error: null });
-    try {
-      // In a real scenario we use Firestore 'invoices' collection
-      // For now, we simulate basic data fetch structure
-      const mockInvoices: Invoice[] = [
-        {
-          id: 'INV-001',
-          companyId: user.companyId,
-          customerId: 'CUST-001',
-          ncfType: 'B02',
-          ncfNumber: 'B0200000001',
-          status: 'PAID',
-          issueDate: new Date(),
-          subtotal: 10000,
-          taxTotal: 1800,
-          discount: 0,
-          total: 11800,
-          items: [
-            {
-              id: 'ITEM-1',
-              description: 'Alquiler Toyota Corolla 5 días',
-              quantity: 5,
-              unitPrice: 2000,
-              taxAmount: 1800,
-              total: 11800
-            }
-          ],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-      set({ invoices: mockInvoices, loading: false });
-    } catch (error: any) {
-      set({ error: error.message, loading: false });
+    
+    let q = query(
+      collection(db, 'invoices'),
+      where('companyId', '==', companyId)
+    );
+    
+    if (branchId) {
+      q = query(q, where('branchId', '==', branchId));
     }
+
+    // Usamos onSnapshot para tiempo real
+    onSnapshot(q, (snapshot) => {
+      const invoices = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Invoice[];
+      
+      // Sort in memory by createdAt desc
+      invoices.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      set({ invoices, loading: false });
+    }, (error) => {
+      set({ error: error.message, loading: false });
+    });
+
+    // We don't store unsubscribe here, but we could if we want to cleanup. 
+    // Usually handled by the component.
   },
 
   createInvoice: async (data) => {
@@ -101,27 +88,35 @@ export const useBillingStore = create<BillingState>((set, get) => ({
 
     set({ loading: true, error: null });
     try {
-      const newId = `INV-${Math.random().toString(36).substr(2, 9)}`;
+      // 1. Llamar a la Cloud Function para generar el NCF (Transaccional)
+      const generateNCF = httpsCallable(functions, 'generateNCF');
       
-      // Simulate NCF Sequence generation
-      const ncfNumber = generateNextNCF(data.ncfType, get().invoices.length);
+      let ncfString = '';
+      try {
+        const result = await generateNCF({ companyId: user.companyId, type: data.ncfType });
+        ncfString = (result.data as any).ncf;
+      } catch (fnError: any) {
+        console.warn("First attempt failed, retrying NCF generation...", fnError);
+        // Reintento
+        const result = await generateNCF({ companyId: user.companyId, type: data.ncfType });
+        ncfString = (result.data as any).ncf;
+      }
 
-      const newInvoice: Invoice = {
+      // 2. Guardar la factura inmutable en Firestore
+      const newInvoiceData = {
         ...data,
-        id: newId,
         companyId: user.companyId,
-        ncfNumber,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        ncfNumber: ncfString,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      set(state => ({
-        invoices: [newInvoice, ...state.invoices],
-        loading: false
-      }));
+      const docRef = await addDoc(collection(db, 'invoices'), newInvoiceData);
 
-      return newId;
+      set({ loading: false });
+      return docRef.id;
     } catch (error: any) {
+      console.error("Error creating invoice:", error);
       set({ error: error.message, loading: false });
       throw error;
     }
@@ -130,14 +125,15 @@ export const useBillingStore = create<BillingState>((set, get) => ({
   updateInvoiceStatus: async (id, status) => {
     set({ loading: true, error: null });
     try {
-      set(state => ({
-        invoices: state.invoices.map(inv => 
-          inv.id === id ? { ...inv, status, updatedAt: new Date() } : inv
-        ),
-        loading: false
-      }));
+      const docRef = doc(db, 'invoices', id);
+      await updateDoc(docRef, { 
+        status, 
+        updatedAt: new Date().toISOString() 
+      });
+      set({ loading: false });
     } catch (error: any) {
       set({ error: error.message, loading: false });
+      throw error;
     }
   }
 }));

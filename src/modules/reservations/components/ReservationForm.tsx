@@ -24,7 +24,7 @@ const AVAILABLE_EXTRAS = [
 
 export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFormProps) => {
   const { addReservation, loading } = useReservationStore();
-  const { activeCompany } = useTenantStore();
+  const { activeCompany, activeBranchId } = useTenantStore();
   const { customers, fetchCustomers } = useCustomerStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
 
@@ -112,8 +112,14 @@ export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFo
     if (!activeCompany?.id) return;
 
     try {
+      if (!activeBranchId) {
+        alert("Error: Seleccione una sucursal activa primero.");
+        return;
+      }
+
       await addReservation({
         companyId: activeCompany.id,
+        branchId: activeBranchId,
         customerId: formData.customerId,
         vehicleId: formData.vehicleId,
         startDate: new Date(formData.startDate).toISOString(),

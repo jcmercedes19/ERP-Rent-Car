@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from '../../core/firebase/config';
-import { collection, doc, setDoc, getDocs, query, where, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, serverTimestamp, onSnapshot } from 'firebase/firestore';
 
 export interface MaintenanceRecord {
   id: string;
@@ -21,29 +21,36 @@ interface MaintenanceState {
   records: MaintenanceRecord[];
   loading: boolean;
   error: string | null;
-  fetchRecords: (companyId: string) => Promise<void>;
+  fetchRecords: (companyId: string) => void;
+  unsubscribeRecords: () => void;
   addRecord: (data: Omit<MaintenanceRecord, 'id' | 'createdAt'>) => Promise<void>;
 }
+
+let recordsUnsubscribe: (() => void) | null = null;
 
 export const useMaintenanceStore = create<MaintenanceState>((set) => ({
   records: [],
   loading: false,
   error: null,
 
-  fetchRecords: async (companyId: string) => {
-    set({ loading: true, error: null });
-    try {
-      const q = query(collection(db, 'maintenance_records'), where('companyId', '==', companyId));
-      const querySnapshot = await getDocs(q);
-      const records = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
-      
-      // Ordenar por fecha descendente
-      records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      
-      set({ records, loading: false });
-    } catch (error: any) {
-      set({ error: error.message, loading: false });
+  unsubscribeRecords: () => {
+    if (recordsUnsubscribe) {
+      recordsUnsubscribe();
+      recordsUnsubscribe = null;
     }
+  },
+
+  fetchRecords: (companyId: string) => {
+    set({ loading: true, error: null });
+
+    const q = query(collection(db, 'maintenance_records'), where('companyId', '==', companyId));
+    recordsUnsubscribe = onSnapshot(q, (snapshot) => {
+      const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MaintenanceRecord));
+      records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      set({ records, loading: false });
+    }, (error: any) => {
+      set({ error: error.message, loading: false });
+    });
   },
 
   addRecord: async (data) => {

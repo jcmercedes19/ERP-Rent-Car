@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { db } from '../../core/firebase/config';
-import { collection, doc, setDoc, getDocs, query, where, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, doc, setDoc, query, where, updateDoc, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 export interface Customer {
   id: string;
@@ -20,6 +20,7 @@ export interface Customer {
   emergencyContactPhone?: string;
   status: 'active' | 'inactive';
   photoUrl?: string; // URL estática
+  documentImages?: string[]; // Múltiples fotos de pasaporte/cédula en base64
   createdAt: any;
   updatedAt: any;
 }
@@ -28,24 +29,37 @@ interface CustomerState {
   customers: Customer[];
   loading: boolean;
   error: string | null;
-  fetchCustomers: (companyId: string) => Promise<void>;
+  unsubscribeSnapshot: (() => void) | null;
+  fetchCustomers: (companyId: string) => void;
   addCustomer: (data: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateCustomer: (id: string, data: Partial<Customer>) => Promise<void>;
   deleteCustomer: (id: string) => Promise<void>;
 }
 
-export const useCustomerStore = create<CustomerState>((set) => ({
+export const useCustomerStore = create<CustomerState>((set, get) => ({
   customers: [],
   loading: false,
   error: null,
+  unsubscribeSnapshot: null,
 
-  fetchCustomers: async (companyId: string) => {
+  fetchCustomers: (companyId: string) => {
+    const existingUnsubscribe = get().unsubscribeSnapshot;
+    if (existingUnsubscribe) {
+      existingUnsubscribe();
+    }
+
     set({ loading: true, error: null });
     try {
       const q = query(collection(db, 'customers'), where('companyId', '==', companyId));
-      const querySnapshot = await getDocs(q);
-      const customers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
-      set({ customers, loading: false });
+      
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const customers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+        set({ customers, loading: false });
+      }, (error) => {
+        set({ error: error.message, loading: false });
+      });
+
+      set({ unsubscribeSnapshot: unsubscribe });
     } catch (error: any) {
       set({ error: error.message, loading: false });
     }
