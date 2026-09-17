@@ -6,6 +6,8 @@ import { RegisterCompany } from '../../modules/auth/RegisterCompany';
 import { CustomerList } from '../../modules/customers/CustomerList';
 import { FleetList } from '../../modules/fleet/FleetList';
 import { ContractList } from '../../modules/contracts/ContractList';
+import { PaymentsList } from '../../modules/finances/PaymentsList';
+import { ExpenseList } from '../../modules/finances/ExpenseList';
 
 export const router = createBrowserRouter([
   {
@@ -38,6 +40,14 @@ export const router = createBrowserRouter([
           {
             path: 'contracts',
             element: <ContractList />,
+          },
+          {
+            path: 'finances/payments',
+            element: <PaymentsList />,
+          },
+          {
+            path: 'finances/expenses',
+            element: <ExpenseList />,
           },
         ],
       },
