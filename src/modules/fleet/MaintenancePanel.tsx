@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { useVehicleStore, Vehicle } from "../../app/store/useVehicleStore";
+import { useVehicleStore } from "../../app/store/useVehicleStore";
+import type { Vehicle } from "../../app/store/useVehicleStore";
 import { useMaintenanceStore } from "../../app/store/useMaintenanceStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { useFinanceStore } from "../../app/store/useFinanceStore";
 import { MaintenanceForm } from "./components/MaintenanceForm";
+import { Button } from "../../shared/components/ui/Button";
 import { Search, Wrench, AlertTriangle, CheckCircle, Clock } from "lucide-react";
 
 export const MaintenancePanel = () => {
