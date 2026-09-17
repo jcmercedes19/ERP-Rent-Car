@@ -1,203 +1,167 @@
-import { useEffect } from "react";
-import { useFinanceStore } from "../../app/store/useFinanceStore";
-import { useVehicleStore } from "../../app/store/useVehicleStore";
-import { useContractStore } from "../../app/store/useContractStore";
-import { useTenantStore } from "../../app/store/useTenantStore";
-import { DollarSign, Car, FileText, Activity } from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from "recharts";
+import { useAnalytics } from "../../app/hooks/useAnalytics";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, TrendingUp, TrendingDown, Car, AlertTriangle, Download, CheckCircle } from "lucide-react";
+
+const COLORS = ['#10b981', '#3b82f6', '#f43f5e'];
 
 export const Dashboard = () => {
-  const { activeCompany } = useTenantStore();
-  const { payments, expenses, fetchFinances } = useFinanceStore();
-  const { vehicles, fetchVehicles } = useVehicleStore();
-  const { contracts, fetchContracts } = useContractStore();
+  const { 
+    totalIncome, totalExpenses, netProfit, 
+    totalVehicles, rentedVehicles, availableVehicles, maintenanceVehicles, occupancyRate,
+    chartData, alerts 
+  } = useAnalytics();
 
-  useEffect(() => {
-    if (activeCompany?.id) {
-      fetchFinances(activeCompany.id);
-      fetchVehicles(activeCompany.id);
-      fetchContracts(activeCompany.id);
-    }
-  }, [activeCompany?.id, fetchFinances, fetchVehicles, fetchContracts]);
-
-  // Cálculos de Finanzas (Mes actual)
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
-
-  const totalIngresosMes = payments
-    .filter(p => {
-      const date = new Date(p.createdAt?.seconds * 1000);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    })
-    .reduce((sum, p) => sum + p.amount, 0);
-
-  const totalGastosMes = expenses
-    .filter(e => {
-      const date = new Date(e.date);
-      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    })
-    .reduce((sum, e) => sum + e.amount, 0);
-
-  // Cálculos de Flota
-  const autosDisponibles = vehicles.filter(v => v.status === "AVAILABLE").length;
-  const autosRentados = vehicles.filter(v => v.status === "RENTED").length;
-  const autosMantenimiento = vehicles.filter(v => v.status === "MAINTENANCE").length;
-
-  const fleetData = [
-    { name: "Disponibles", value: autosDisponibles, color: "#10B981" },
-    { name: "Rentados", value: autosRentados, color: "#3B82F6" },
-    { name: "Mantenimiento", value: autosMantenimiento, color: "#EF4444" },
+  const pieData = [
+    { name: 'Disponibles', value: availableVehicles },
+    { name: 'Rentados', value: rentedVehicles },
+    { name: 'Taller', value: maintenanceVehicles },
   ];
 
-  // Cálculos de Contratos
-  const contratosActivos = contracts.filter(c => c.status === "ACTIVE").length;
-
-  // Datos para Gráfico de Barras (Últimos 6 meses)
-  const last6Months = Array.from({ length: 6 }).map((_, i) => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - i);
-    return {
-      monthIndex: d.getMonth(),
-      year: d.getFullYear(),
-      name: d.toLocaleString('es-ES', { month: 'short' }).toUpperCase(),
-      Ingresos: 0,
-      Gastos: 0,
-    };
-  }).reverse();
-
-  payments.forEach(p => {
-    if(!p.createdAt) return;
-    const date = new Date(p.createdAt.seconds * 1000);
-    const monthData = last6Months.find(m => m.monthIndex === date.getMonth() && m.year === date.getFullYear());
-    if (monthData) monthData.Ingresos += p.amount;
-  });
-
-  expenses.forEach(e => {
-    const date = new Date(e.date);
-    const monthData = last6Months.find(m => m.monthIndex === date.getMonth() && m.year === date.getFullYear());
-    if (monthData) monthData.Gastos += e.amount;
-  });
-
+  const exportCSV = () => {
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + "Mes,Año,Ingresos,Gastos\n"
+      + chartData.map(e => `${e.month},${e.year},${e.income},${e.expense}`).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "reporte_financiero_6_meses.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Resumen general de tu rentadora.</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard General</h1>
+          <p className="text-sm text-muted-foreground">Visión general del estado operativo y financiero.</p>
         </div>
+        <button 
+          onClick={exportCSV}
+          className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-xl hover:bg-primary/20 transition-colors font-medium text-sm"
+        >
+          <Download size={16} />
+          Exportar CSV
+        </button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="glass p-6 rounded-2xl shadow-apple flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Ingresos del Mes</p>
-            <h3 className="text-2xl font-bold text-green-500 mt-1">${totalIngresosMes.toLocaleString()}</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="glass p-5 rounded-2xl shadow-apple">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+              <DollarSign size={24} />
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500">
-            <DollarSign size={24} />
-          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Ingresos Globales</p>
+          <h3 className="text-2xl font-bold text-foreground">${totalIncome.toLocaleString()}</h3>
         </div>
 
-        <div className="glass p-6 rounded-2xl shadow-apple flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Gastos del Mes</p>
-            <h3 className="text-2xl font-bold text-red-500 mt-1">${totalGastosMes.toLocaleString()}</h3>
+        <div className="glass p-5 rounded-2xl shadow-apple">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-rose-500/10 text-rose-500 rounded-xl">
+              <TrendingDown size={24} />
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center text-red-500">
-            <Activity size={24} />
-          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Gastos Globales</p>
+          <h3 className="text-2xl font-bold text-foreground">${totalExpenses.toLocaleString()}</h3>
         </div>
 
-        <div className="glass p-6 rounded-2xl shadow-apple flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Flota Disponible</p>
-            <h3 className="text-2xl font-bold text-blue-500 mt-1">{autosDisponibles} <span className="text-sm text-muted-foreground">/ {vehicles.length}</span></h3>
+        <div className="glass p-5 rounded-2xl shadow-apple">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-primary/10 text-primary rounded-xl">
+              <TrendingUp size={24} />
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500">
-            <Car size={24} />
-          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Beneficio Neto</p>
+          <h3 className="text-2xl font-bold text-foreground">${netProfit.toLocaleString()}</h3>
         </div>
 
-        <div className="glass p-6 rounded-2xl shadow-apple flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">Contratos Activos</p>
-            <h3 className="text-2xl font-bold text-purple-500 mt-1">{contratosActivos}</h3>
+        <div className="glass p-5 rounded-2xl shadow-apple">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
+              <Car size={24} />
+            </div>
           </div>
-          <div className="h-12 w-12 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500">
-            <FileText size={24} />
-          </div>
+          <p className="text-sm font-medium text-muted-foreground mb-1">Tasa de Ocupación</p>
+          <h3 className="text-2xl font-bold text-foreground">{occupancyRate.toFixed(1)}%</h3>
+          <p className="text-xs text-muted-foreground mt-1">{rentedVehicles} de {totalVehicles} rentados</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Gráfico de Barras */}
-        <div className="glass p-6 rounded-2xl shadow-apple lg:col-span-2">
-          <h3 className="text-lg font-bold text-foreground mb-4">Ingresos vs Gastos (Últimos 6 meses)</h3>
-          <div className="h-72">
+        {/* Main Chart */}
+        <div className="glass p-5 rounded-2xl shadow-apple lg:col-span-2 flex flex-col min-h-[400px]">
+          <h3 className="text-lg font-semibold text-foreground mb-6">Ingresos vs Gastos (Últimos 6 meses)</h3>
+          <div className="flex-1 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={last6Months} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(150,150,150,0.1)" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'gray' }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'gray' }} />
+              <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" vertical={false} />
+                <XAxis dataKey="month" stroke="#9ca3af" />
+                <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${value}`} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                  cursor={{ fill: 'rgba(150,150,150,0.1)' }}
+                  cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                  contentStyle={{ backgroundColor: 'rgba(17, 24, 39, 0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                  itemStyle={{ color: '#fff' }}
                 />
-                <Bar dataKey="Ingresos" fill="#10B981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Gastos" fill="#EF4444" radius={[4, 4, 0, 0]} />
+                <Legend />
+                <Bar dataKey="income" name="Ingresos" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expense" name="Gastos" fill="#f43f5e" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Gráfico Circular */}
-        <div className="glass p-6 rounded-2xl shadow-apple">
-          <h3 className="text-lg font-bold text-foreground mb-4">Estado de la Flota</h3>
-          <div className="h-56 flex justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={fleetData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {fleetData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(255,255,255,0.9)', borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+        {/* Side Panel (Pie Chart + Alerts) */}
+        <div className="space-y-6">
+          <div className="glass p-5 rounded-2xl shadow-apple flex flex-col h-[280px]">
+            <h3 className="text-lg font-semibold text-foreground mb-2">Estado de Flota</h3>
+            <div className="flex-1 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(17, 24, 39, 0.8)', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <div className="flex flex-col gap-2 mt-4">
-            {fleetData.map(item => (
-              <div key={item.name} className="flex justify-between items-center text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                  <span className="text-muted-foreground">{item.name}</span>
-                </div>
-                <span className="font-bold text-foreground">{item.value}</span>
+
+          <div className="glass p-5 rounded-2xl shadow-apple flex-1">
+            <h3 className="text-lg font-semibold text-foreground mb-4">Alertas de Sistema</h3>
+            {alerts.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <CheckCircle size={32} className="mb-2 opacity-20" />
+                <p className="text-sm">No hay alertas activas</p>
               </div>
-            ))}
+            ) : (
+              <div className="space-y-3">
+                {alerts.map((alert, i) => (
+                  <div key={i} className={`p-3 rounded-xl flex items-start gap-3 ${
+                    alert.type === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
+                  }`}>
+                    <AlertTriangle size={18} className="mt-0.5" />
+                    <p className="text-sm font-medium">{alert.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
