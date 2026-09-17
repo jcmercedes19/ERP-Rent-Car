@@ -15,6 +15,13 @@ export const AppLayout: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // Simulación RBAC (Role Based Access Control)
+  const role = user?.role || 'ADMIN';
+  const isAdmin = role === 'ADMIN';
+  const canSeeFinances = isAdmin || role === 'CASHIER';
+  const canSeeMaintenance = isAdmin || role === 'MAINTENANCE';
+  const canSeeFleet = isAdmin || role === 'MAINTENANCE' || role === 'RENTALS';
+
   const handleLogout = async () => {
     await signOut(auth);
   };
@@ -65,34 +72,46 @@ export const AppLayout: React.FC = () => {
             <Car size={18} />
             Flota
           </Link>
-          <Link to="/fleet/maintenance" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors pl-8 text-sm">
-            <Wrench size={16} />
-            Taller / Mantenimiento
-          </Link>
+          {canSeeFleet && (
+            <Link to="/fleet" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+              <CarFront size={18} />
+              Gestión de Flota
+            </Link>
+          )}
+          {canSeeMaintenance && (
+            <Link to="/maintenance" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+              <Wrench size={18} />
+              Mantenimiento
+            </Link>
+          )}
           <Link to="/customers" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Users size={18} />
             Clientes
           </Link>
 
-          <div className="pt-4 pb-1">
-            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Finanzas</p>
-          </div>
-          <Link to="/finances/invoicing" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <FileText size={18} />
-            Facturación Fiscal
-          </Link>
-          <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <CreditCard size={18} />
-            Cobros
-          </Link>
-          <Link to="/finances/cash" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <DollarSign size={18} />
-            Control de Caja
-          </Link>
-          <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <CreditCard size={18} />
-            Gastos Operativos
-          </Link>
+          {canSeeFinances && (
+            <>
+              <div className="pt-4 pb-1">
+                <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Finanzas</p>
+              </div>
+              <Link to="/finances/invoicing" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <FileText size={18} />
+                Facturación Fiscal
+              </Link>
+              <Link to="/finances/payments" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <CreditCard size={18} />
+                Cobros
+              </Link>
+              <Link to="/finances/cash" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <DollarSign size={18} />
+                Control de Caja
+              </Link>
+              <Link to="/finances/expenses" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <CreditCard size={18} />
+                Gastos Operativos
+              </Link>
+            </>
+          )}
 
           <div className="pt-4 pb-1">
             <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ajustes & Portal</p>
@@ -117,10 +136,18 @@ export const AppLayout: React.FC = () => {
             <Building size={18} />
             Portal Digital Rent Car
           </a>
-          <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
-            <Settings size={18} />
-            Configuración
-          </Link>
+          {isAdmin && (
+            <>
+              <Link to="/settings/branches" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <Building size={18} />
+                Sucursales
+              </Link>
+              <Link to="/settings/users" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
+                <Settings size={18} />
+                Roles y Usuarios
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="mt-auto pt-4 border-t border-border">

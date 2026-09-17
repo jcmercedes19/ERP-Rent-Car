@@ -19,6 +19,8 @@ import { BookingPortal } from '../../modules/public/BookingPortal';
 import { CompanyDirectory } from '../../modules/public/CompanyDirectory';
 import { CashRegisterPanel } from '../../modules/finances/CashRegisterPanel';
 import { InvoicingPanel } from '../../modules/finances/InvoicingPanel';
+import { BranchManager } from '../../modules/settings/BranchManager';
+import { UserManager } from '../../modules/settings/UserManager';
 
 export const router = createBrowserRouter([
   {
@@ -57,6 +59,19 @@ export const router = createBrowserRouter([
           {
             path: 'customers',
             element: <CustomerList />,
+          },
+          {
+            path: 'settings',
+            children: [
+              {
+                path: 'branches',
+                element: <BranchManager />,
+              },
+              {
+                path: 'users',
+                element: <UserManager />,
+              },
+            ],
           },
           {
             path: 'reservations',

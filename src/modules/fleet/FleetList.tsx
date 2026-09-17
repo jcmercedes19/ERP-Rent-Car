@@ -3,8 +3,9 @@ import { useVehicleStore, type Vehicle } from "../../app/store/useVehicleStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
 import { GlassTable } from "../../shared/components/ui/GlassTable";
 import { Button } from "../../shared/components/ui/Button";
-import { Plus, Search, Edit2, Trash2, CarFront, CheckCircle2, CalendarClock, Key, Truck, CornerDownLeft, Wrench, AlertTriangle, Ban, XOctagon, BadgeDollarSign } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, CarFront, CheckCircle2, CalendarClock, Key, Truck, CornerDownLeft, Wrench, AlertTriangle, Ban, XOctagon, BadgeDollarSign, Activity } from "lucide-react";
 import { VehicleForm } from "./components/VehicleForm";
+import { VehicleOperationsModal } from "./components/VehicleOperationsModal";
 
 export const FleetList = () => {
   const { activeCompany } = useTenantStore();
@@ -12,7 +13,9 @@ export const FleetList = () => {
   
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpsModalOpen, setIsOpsModalOpen] = useState(false);
   const [vehicleToEdit, setVehicleToEdit] = useState<Vehicle | null>(null);
+  const [vehicleForOps, setVehicleForOps] = useState<Vehicle | null>(null);
 
   useEffect(() => {
     if (activeCompany?.id) {
@@ -105,10 +108,16 @@ export const FleetList = () => {
       header: "Acciones",
       cell: (row: Vehicle) => (
         <div className="flex gap-2">
-          <button onClick={() => handleEdit(row)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors">
+          <button onClick={() => {
+            setVehicleForOps(row);
+            setIsOpsModalOpen(true);
+          }} className="p-2 text-indigo-500 hover:bg-indigo-500/10 rounded-full transition-colors" title="Operaciones">
+            <Activity size={16} />
+          </button>
+          <button onClick={() => handleEdit(row)} className="p-2 text-blue-500 hover:bg-blue-500/10 rounded-full transition-colors" title="Editar">
             <Edit2 size={16} />
           </button>
-          <button onClick={() => handleDelete(row.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors">
+          <button onClick={() => handleDelete(row.id)} className="p-2 text-red-500 hover:bg-red-500/10 rounded-full transition-colors" title="Eliminar">
             <Trash2 size={16} />
           </button>
         </div>
@@ -150,6 +159,12 @@ export const FleetList = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         vehicleToEdit={vehicleToEdit} 
+      />
+
+      <VehicleOperationsModal
+        isOpen={isOpsModalOpen}
+        onClose={() => setIsOpsModalOpen(false)}
+        vehicle={vehicleForOps}
       />
     </div>
   );
