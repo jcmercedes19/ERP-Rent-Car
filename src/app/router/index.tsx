@@ -13,6 +13,7 @@ import { FinancialDashboard } from '../../modules/finances/FinancialDashboard';
 import { Dashboard } from '../../modules/dashboard/Dashboard';
 import { ReservationCalendar } from '../../modules/reservations/ReservationCalendar';
 import { CheckInOutPanel } from '../../modules/operations/CheckInOutPanel';
+import { MaintenancePanel } from '../../modules/fleet/MaintenancePanel';
 
 export const router = createBrowserRouter([
   {
@@ -49,6 +50,10 @@ export const router = createBrowserRouter([
           {
             path: 'fleet',
             element: <FleetList />,
+          },
+          {
+            path: 'fleet/maintenance',
+            element: <MaintenancePanel />,
           },
           {
             path: 'contracts',
