@@ -4,7 +4,7 @@ import { useVehicleStore } from '../store/useVehicleStore';
 import { useMaintenanceStore } from '../store/useMaintenanceStore';
 
 export const useAnalytics = () => {
-  const { transactions } = useFinanceStore();
+  const { payments, expenses } = useFinanceStore();
   const { vehicles } = useVehicleStore();
   const { records: maintenanceRecords } = useMaintenanceStore();
 
@@ -13,9 +13,14 @@ export const useAnalytics = () => {
     let totalIncome = 0;
     let totalExpenses = 0;
 
-    transactions.forEach(t => {
-      if (t.type === 'INCOME') totalIncome += t.amount;
-      if (t.type === 'EXPENSE') totalExpenses += t.amount;
+    payments.forEach(p => {
+      // Assuming all payments are income except penalties which might also be income?
+      // In this system, payments represent money coming in.
+      totalIncome += p.amount;
+    });
+
+    expenses.forEach(e => {
+      totalExpenses += e.amount;
     });
 
     const netProfit = totalIncome - totalExpenses;
@@ -35,7 +40,6 @@ export const useAnalytics = () => {
     const occupancyRate = totalVehicles > 0 ? (rentedVehicles / totalVehicles) * 100 : 0;
 
     // 3. Generate Monthly Chart Data
-    // We group transactions by month for a 6-month view
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
@@ -48,12 +52,20 @@ export const useAnalytics = () => {
       };
     }).reverse();
 
-    transactions.forEach(t => {
-      const d = new Date(t.date);
+    payments.forEach(p => {
+      // payment has createdAt timestamp from firebase, try to get date
+      const d = p.createdAt?.seconds ? new Date(p.createdAt.seconds * 1000) : new Date();
       const m = last6Months.find(month => month.monthNum === d.getMonth() && month.year === d.getFullYear());
       if (m) {
-        if (t.type === 'INCOME') m.income += t.amount;
-        if (t.type === 'EXPENSE') m.expense += t.amount;
+        m.income += p.amount;
+      }
+    });
+
+    expenses.forEach(e => {
+      const d = new Date(e.date);
+      const m = last6Months.find(month => month.monthNum === d.getMonth() && month.year === d.getFullYear());
+      if (m) {
+        m.expense += e.amount;
       }
     });
 
@@ -89,7 +101,7 @@ export const useAnalytics = () => {
       chartData: last6Months,
       alerts
     };
-  }, [transactions, vehicles, maintenanceRecords]);
+  }, [payments, expenses, vehicles, maintenanceRecords]);
 
   return metrics;
 };
