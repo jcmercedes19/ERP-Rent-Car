@@ -1,15 +1,19 @@
 # PROJECT STATE
 
 ## LAST SESSION
-- Inicialización del repositorio.
-- Creación de la documentación de arquitectura (FASE 0) según especificaciones del Prompt Maestro.
+- Implementación de la FASE 1 (Fundación).
+- Creación de proyecto Firebase: `rentcar-erp-jcm-2026`.
+- Configuración de Vite, React, TypeScript y Tailwind CSS V4.
+- Implementación de estado global (Zustand) para `Auth` y `Tenant`.
+- Configuración de ruteo (`react-router-dom`) y componentes base de autenticación (Login, Registro Multi-Tenant, Layout).
 
 ## CURRENT WORK
-- Validación de la arquitectura (FASE 0).
+- Cierre de la FASE 1.
 
 ## NEXT ACTION
-- Esperar la validación por parte del usuario de las decisiones arquitectónicas.
-- Iniciar la FASE 1 - FUNDACIÓN (Configuración de Vite, React, Firebase y Multi-Tenant).
+- Validar la inicialización y el flujo de registro.
+- Habilitar Authentication (Email/Password) y Firestore Database desde la consola de Firebase.
+- Continuar hacia la FASE 2: Clientes y Flota.
 
 ## CONTINUAR
-- Presentar el resumen arquitectónico y validar las decisiones con el usuario. Una vez aprobado, configurar el proyecto React base y el SDK de Firebase.
+- Pedir al usuario que pruebe el entorno corriendo `npm run dev` y que habilite Firestore/Auth en la consola de Firebase.
