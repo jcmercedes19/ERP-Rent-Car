@@ -132,7 +132,7 @@ export const useReservationStore = create<ReservationState>((set) => ({
       const newReservation = {
         ...data,
         id: newRef.id,
-        status: 'PENDING_APPROVAL', // Force this status for public
+        status: 'PENDING', // Force this status for public
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };

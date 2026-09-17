@@ -1,18 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useVehicleStore, Vehicle } from "../../app/store/useVehicleStore";
+import { useParams } from "react-router-dom";
+import { useVehicleStore } from "../../app/store/useVehicleStore";
+import type { Vehicle } from "../../app/store/useVehicleStore";
 import { useReservationStore } from "../../app/store/useReservationStore";
 import { Button } from "../../shared/components/ui/Button";
 import { Input } from "../../shared/components/ui/Input";
 import { GlassModal } from "../../shared/components/ui/GlassModal";
-import { Search, Calendar, Car, Tag, ChevronRight, Info, CheckCircle } from "lucide-react";
+import { Search, Car, ChevronRight, Info, CheckCircle } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../core/firebase/config";
 
 export const BookingPortal = () => {
   const { companyId } = useParams();
-  const navigate = useNavigate();
   const { vehicles, fetchVehicles, loading: vehiclesLoading } = useVehicleStore();
   const { createPublicReservation } = useReservationStore();
 
@@ -112,7 +112,7 @@ export const BookingPortal = () => {
         vehicleId: selectedVehicle.id,
         startDate: new Date(startDate).toISOString(),
         endDate: new Date(endDate).toISOString(),
-        status: 'PENDING_APPROVAL',
+        status: 'PENDING',
         extras: selectedExtras,
         subtotal,
         tax,

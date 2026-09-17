@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key, Wrench } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key, Wrench, Globe } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 
@@ -91,8 +91,19 @@ export const AppLayout: React.FC = () => {
           </Link>
 
           <div className="pt-4 pb-1">
-            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ajustes</p>
+            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Ajustes & Portal</p>
           </div>
+          {activeCompany?.id && (
+            <a 
+              href={`/${activeCompany.id}/book`} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-primary hover:bg-primary/10 transition-colors font-medium"
+            >
+              <Globe size={18} />
+              Portal de Clientes
+            </a>
+          )}
           <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Settings size={18} />
             Configuración
