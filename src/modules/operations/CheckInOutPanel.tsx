@@ -12,7 +12,7 @@ export const CheckInOutPanel = () => {
   const { reservations, fetchReservations, updateReservationStatus } = useReservationStore();
   const { vehicles, fetchVehicles, updateVehicle } = useVehicleStore();
   const { customers, fetchCustomers } = useCustomerStore();
-  const { addTransaction } = useFinanceStore();
+  const { addPayment } = useFinanceStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeInspection, setActiveInspection] = useState<{
@@ -48,11 +48,13 @@ export const CheckInOutPanel = () => {
       // En un sistema real, guardaríamos el inspectionData en una colección 'inspections'
       console.log("Datos de inspección:", inspectionData);
 
+      if (!activeCompany?.id) return;
+
       if (type === 'CHECK_OUT') {
         // Pasa de PENDING a CONFIRMED
         await updateReservationStatus(reservation.id, 'CONFIRMED');
         // Vehículo pasa a RENTED
-        await updateVehicle(vehicle.id, { status: 'RENTED', mileage: data.mileage });
+        await updateVehicle(vehicle.id, { status: 'RENTED', currentMileage: inspectionData.mileage });
       } else {
         // CHECK_IN
         // Pasa de CONFIRMED a COMPLETED
@@ -60,34 +62,34 @@ export const CheckInOutPanel = () => {
         // Vehículo pasa a AVAILABLE (o NEEDS_CLEANING)
         await updateVehicle(vehicle.id, { 
           status: 'AVAILABLE', 
-          mileage: data.mileage 
+          currentMileage: inspectionData.mileage 
         });
 
         // Automatización de Penalidades (Si hay daños nuevos o falta combustible)
         let penaltyAmount = 0;
         let penaltyDescription = "Penalidad por: ";
         
-        if (data.damages && data.damages.length > 0) {
+        if (inspectionData.damages && inspectionData.damages.length > 0) {
           penaltyAmount += 150; // Flat fee penalidad por daños (se ajustará luego en finanzas)
-          penaltyDescription += `Nuevos daños reportados en ${data.damages.join(', ')}. `;
+          penaltyDescription += `Nuevos daños reportados en ${inspectionData.damages.join(', ')}. `;
         }
-        if (data.fuelLevel !== "8/8" && data.fuelLevel !== "7/8") {
+        if (inspectionData.fuelLevel !== "8/8" && inspectionData.fuelLevel !== "7/8") {
           penaltyAmount += 25; // Penalidad por combustible
-          penaltyDescription += `Combustible incompleto (${data.fuelLevel}). `;
+          penaltyDescription += `Combustible incompleto (${inspectionData.fuelLevel}). `;
         }
 
         if (penaltyAmount > 0) {
           const confirmPenalty = window.confirm(`El vehículo presenta novedades durante el Check-In.\n\n${penaltyDescription}\n\n¿Deseas generar automáticamente un cargo de penalidad por $${penaltyAmount} en el estado de cuenta del cliente?`);
           
           if (confirmPenalty) {
-            await addTransaction({
+            await addPayment({
               companyId: activeCompany.id,
-              type: 'INCOME',
-              category: 'PENALTY',
+              contractId: reservation.id,
               amount: penaltyAmount,
-              date: new Date().toISOString(),
-              description: `Reserva ${reservation.id.slice(0,8)} - ${penaltyDescription}`,
-              referenceId: reservation.id
+              method: 'CASH', // Asumimos efectivo por defecto para que lo edite después
+              type: 'PENALTY',
+              reference: `Penalidad Auto-generada`,
+              notes: `Reserva ${reservation.id.slice(0,8)} - ${penaltyDescription}`
             });
             alert("Penalidad generada exitosamente en el módulo de Finanzas.");
           }
