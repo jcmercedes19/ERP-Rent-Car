@@ -111,7 +111,7 @@ export const AppLayout: React.FC = () => {
             className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition-colors font-medium"
           >
             <Building size={18} />
-            Marketplace Público
+            Portal Digital Rent Car
           </a>
           <Link to="#" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors">
             <Settings size={18} />

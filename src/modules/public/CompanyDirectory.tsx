@@ -64,7 +64,7 @@ export const CompanyDirectory = () => {
 
       <main className="flex-1 p-6 md:p-12 max-w-6xl mx-auto w-full">
         <div className="text-center mb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <h2 className="text-4xl font-extrabold text-foreground mb-4">Marketplace de Vehículos</h2>
+          <h2 className="text-4xl font-extrabold text-foreground mb-4">Portal Digital Rent Car</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Explora las mejores agencias de renta de autos. Elige una empresa para ver su flota disponible y reservar en tiempo real.
           </p>
