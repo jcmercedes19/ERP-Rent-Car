@@ -3,6 +3,7 @@ import { useReservationStore } from "../../app/store/useReservationStore";
 import { useVehicleStore } from "../../app/store/useVehicleStore";
 import { useCustomerStore } from "../../app/store/useCustomerStore";
 import { useTenantStore } from "../../app/store/useTenantStore";
+import { useFinanceStore } from "../../app/store/useFinanceStore";
 import { InspectionForm } from "./components/InspectionForm";
 import { Search, LogOut, LogIn, Clock } from "lucide-react";
 
@@ -11,6 +12,7 @@ export const CheckInOutPanel = () => {
   const { reservations, fetchReservations, updateReservationStatus } = useReservationStore();
   const { vehicles, fetchVehicles, updateVehicle } = useVehicleStore();
   const { customers, fetchCustomers } = useCustomerStore();
+  const { addTransaction } = useFinanceStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [activeInspection, setActiveInspection] = useState<{
@@ -50,13 +52,46 @@ export const CheckInOutPanel = () => {
         // Pasa de PENDING a CONFIRMED
         await updateReservationStatus(reservation.id, 'CONFIRMED');
         // Vehículo pasa a RENTED
-        await updateVehicle(vehicle.id, { status: 'RENTED' });
+        await updateVehicle(vehicle.id, { status: 'RENTED', mileage: data.mileage });
       } else {
         // CHECK_IN
         // Pasa de CONFIRMED a COMPLETED
         await updateReservationStatus(reservation.id, 'COMPLETED');
-        // Vehículo pasa a AVAILABLE (o NEEDS_CLEANING según reglas complejas, usaremos AVAILABLE por defecto)
-        await updateVehicle(vehicle.id, { status: 'AVAILABLE' });
+        // Vehículo pasa a AVAILABLE (o NEEDS_CLEANING)
+        await updateVehicle(vehicle.id, { 
+          status: 'AVAILABLE', 
+          mileage: data.mileage 
+        });
+
+        // Automatización de Penalidades (Si hay daños nuevos o falta combustible)
+        let penaltyAmount = 0;
+        let penaltyDescription = "Penalidad por: ";
+        
+        if (data.damages && data.damages.length > 0) {
+          penaltyAmount += 150; // Flat fee penalidad por daños (se ajustará luego en finanzas)
+          penaltyDescription += `Nuevos daños reportados en ${data.damages.join(', ')}. `;
+        }
+        if (data.fuelLevel !== "8/8" && data.fuelLevel !== "7/8") {
+          penaltyAmount += 25; // Penalidad por combustible
+          penaltyDescription += `Combustible incompleto (${data.fuelLevel}). `;
+        }
+
+        if (penaltyAmount > 0) {
+          const confirmPenalty = window.confirm(`El vehículo presenta novedades durante el Check-In.\n\n${penaltyDescription}\n\n¿Deseas generar automáticamente un cargo de penalidad por $${penaltyAmount} en el estado de cuenta del cliente?`);
+          
+          if (confirmPenalty) {
+            await addTransaction({
+              companyId: activeCompany.id,
+              type: 'INCOME',
+              category: 'PENALTY',
+              amount: penaltyAmount,
+              date: new Date().toISOString(),
+              description: `Reserva ${reservation.id.slice(0,8)} - ${penaltyDescription}`,
+              referenceId: reservation.id
+            });
+            alert("Penalidad generada exitosamente en el módulo de Finanzas.");
+          }
+        }
       }
       
       alert(`Flujo de ${type === 'CHECK_OUT' ? 'Entrega' : 'Recepción'} completado exitosamente.`);

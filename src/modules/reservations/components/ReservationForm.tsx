@@ -6,14 +6,21 @@ import { useReservationStore } from "../../../app/store/useReservationStore";
 import { useTenantStore } from "../../../app/store/useTenantStore";
 import { useCustomerStore } from "../../../app/store/useCustomerStore";
 import { useVehicleStore } from "../../../app/store/useVehicleStore";
-import { Calendar as CalendarIcon, User, Car, DollarSign } from "lucide-react";
-import { differenceInDays, parseISO } from "date-fns";
+import { Calendar as CalendarIcon, User, Car, DollarSign, Package } from "lucide-react";
+import { differenceInDays, parseISO, startOfDay } from "date-fns";
 
 interface ReservationFormProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate?: Date | null;
 }
+
+const AVAILABLE_EXTRAS = [
+  { id: 'BABY_SEAT', name: 'Silla de Bebé', price: 10 },
+  { id: 'GPS', name: 'GPS Navigator', price: 5 },
+  { id: 'PREMIUM_INSURANCE', name: 'Seguro Premium', price: 25 },
+  { id: 'ADDITIONAL_DRIVER', name: 'Conductor Adicional', price: 15 },
+];
 
 export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFormProps) => {
   const { addReservation, loading } = useReservationStore();
@@ -27,9 +34,15 @@ export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFo
     startDate: "",
     endDate: "",
     notes: "",
+    extras: [] as string[],
   });
 
-  const [totalEstimated, setTotalEstimated] = useState(0);
+  const [financials, setFinancials] = useState({
+    subtotal: 0,
+    tax: 0,
+    deposit: 0,
+    totalEstimated: 0
+  });
 
   useEffect(() => {
     if (activeCompany?.id) {
@@ -53,18 +66,46 @@ export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFo
     if (formData.startDate && formData.endDate && formData.vehicleId) {
       const start = parseISO(formData.startDate);
       const end = parseISO(formData.endDate);
-      const days = differenceInDays(end, start);
+      const days = Math.max(1, differenceInDays(end, start));
       
-      if (days > 0) {
-        const vehicle = vehicles.find(v => v.id === formData.vehicleId);
-        if (vehicle) {
-          setTotalEstimated(days * vehicle.dailyRate);
-        }
-      } else {
-        setTotalEstimated(0);
+      const vehicle = vehicles.find(v => v.id === formData.vehicleId);
+      if (vehicle) {
+        let extrasTotal = 0;
+        formData.extras.forEach(extraId => {
+          const extra = AVAILABLE_EXTRAS.find(e => e.id === extraId);
+          if (extra) extrasTotal += extra.price * days;
+        });
+
+        const rentalCost = days * vehicle.dailyRate;
+        const subtotal = rentalCost + extrasTotal;
+        const tax = subtotal * 0.18; // 18% ITBIS
+        
+        // Deposit logic: Economy = 200, Compact = 300, SUV/VAN = 500, Luxury = 1000
+        let deposit = 200;
+        if (vehicle.category === 'COMPACT') deposit = 300;
+        if (vehicle.category === 'SUV' || vehicle.category === 'VAN') deposit = 500;
+        if (vehicle.category === 'LUXURY') deposit = 1000;
+
+        setFinancials({
+          subtotal,
+          tax,
+          deposit,
+          totalEstimated: subtotal + tax
+        });
       }
+    } else {
+      setFinancials({ subtotal: 0, tax: 0, deposit: 0, totalEstimated: 0 });
     }
-  }, [formData.startDate, formData.endDate, formData.vehicleId, vehicles]);
+  }, [formData.startDate, formData.endDate, formData.vehicleId, formData.extras, vehicles]);
+
+  const handleExtraToggle = (extraId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      extras: prev.extras.includes(extraId) 
+        ? prev.extras.filter(id => id !== extraId)
+        : [...prev.extras, extraId]
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,11 +119,15 @@ export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFo
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         status: 'PENDING',
-        totalEstimated,
+        extras: formData.extras,
+        subtotal: financials.subtotal,
+        tax: financials.tax,
+        deposit: financials.deposit,
+        totalEstimated: financials.totalEstimated,
         notes: formData.notes
       });
       onClose();
-      setFormData({ customerId: "", vehicleId: "", startDate: "", endDate: "", notes: "" });
+      setFormData({ customerId: "", vehicleId: "", startDate: "", endDate: "", notes: "", extras: [] });
     } catch (error: any) {
       alert(error.message || "Error al crear la reservación");
     }
@@ -125,14 +170,47 @@ export const ReservationForm = ({ isOpen, onClose, selectedDate }: ReservationFo
           <Input label="Fecha de Fin" type="date" required value={formData.endDate} onChange={e => setFormData({...formData, endDate: e.target.value})} icon={<CalendarIcon size={18} />} />
         </div>
 
-        <div className="glass p-4 rounded-xl border border-primary/20 flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">Total Estimado</p>
-            <p className="text-xs text-muted-foreground">Calculado automáticamente por tarifa diaria</p>
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground ml-1 flex items-center gap-2">
+            <Package size={16} /> Extras y Complementos
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {AVAILABLE_EXTRAS.map(extra => (
+              <div 
+                key={extra.id}
+                onClick={() => handleExtraToggle(extra.id)}
+                className={`p-3 rounded-xl border cursor-pointer transition-all flex justify-between items-center ${
+                  formData.extras.includes(extra.id) 
+                    ? 'bg-primary/10 border-primary text-primary' 
+                    : 'bg-background/50 border-border text-muted-foreground hover:border-primary/50'
+                }`}
+              >
+                <span className="text-sm font-medium">{extra.name}</span>
+                <span className="text-xs font-bold">+${extra.price}/día</span>
+              </div>
+            ))}
           </div>
-          <div className="text-2xl font-bold text-primary flex items-center">
-            <DollarSign size={24} />
-            {totalEstimated.toLocaleString()}
+        </div>
+
+        <div className="glass p-4 rounded-xl border border-primary/20 space-y-3">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Subtotal (Renta + Extras)</span>
+            <span className="font-medium">${financials.subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Impuestos (18% ITBIS)</span>
+            <span className="font-medium">${financials.tax.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-amber-500 font-medium flex items-center gap-1">Depósito de Garantía (Retención)</span>
+            <span className="font-medium text-amber-500">${financials.deposit.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+          </div>
+          <div className="pt-3 border-t border-border flex justify-between items-center">
+            <span className="font-bold text-foreground">Total a Cobrar</span>
+            <span className="text-2xl font-bold text-primary flex items-center">
+              <DollarSign size={20} />
+              {financials.totalEstimated.toLocaleString(undefined, {minimumFractionDigits: 2})}
+            </span>
           </div>
         </div>
 

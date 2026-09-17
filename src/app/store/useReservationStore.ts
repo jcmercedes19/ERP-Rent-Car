@@ -10,7 +10,11 @@ export interface Reservation {
   startDate: string; // ISO string
   endDate: string; // ISO string
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  totalEstimated: number;
+  extras: string[]; // e.g. ['BABY_SEAT', 'GPS', 'PREMIUM_INSURANCE']
+  subtotal: number; // Days * dailyRate + extras
+  tax: number; // 18% ITBIS
+  deposit: number; // Security deposit
+  totalEstimated: number; // subtotal + tax
   notes?: string;
   createdAt: any;
 }
