@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './app/router';
 import { auth } from './core/firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { useAuthStore } from './app/store/useAuthStore';
+
+import { ThemeProvider } from './shared/components/ThemeProvider';
 
 function App() {
   const { setUser, setLoading } = useAuthStore();
@@ -17,7 +19,11 @@ function App() {
     return () => unsubscribe();
   }, [setUser, setLoading]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <ThemeProvider>
+      <RouterProvider router={router} />
+    </ThemeProvider>
+  );
 }
 
 export default App;

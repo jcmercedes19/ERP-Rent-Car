@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from '../../shared/layouts/AppLayout';
 import { ProtectedRoute } from '../../core/auth/ProtectedRoute';
