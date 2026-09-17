@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useCashStore } from '../../app/store/useCashStore';
-import { Lock, Unlock, DollarSign, PlusCircle, History, AlertTriangle } from 'lucide-react';
+import { Lock, Unlock, History, AlertTriangle } from 'lucide-react';
 import { formatCurrency } from '../../core/utils/formatters';
 
 export function CashRegisterPanel() {
-  const { currentRegister, fetchCurrentRegister, openRegister, closeRegister, addTransaction, transactions } = useCashStore();
+  const { currentRegister, fetchCurrentRegister, openRegister, closeRegister, transactions } = useCashStore();
   const [initialBalance, setInitialBalance] = useState('');
   const [closeBalance, setCloseBalance] = useState('');
 

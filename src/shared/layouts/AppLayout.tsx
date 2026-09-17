@@ -3,7 +3,7 @@ import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../app/store/useAuthStore';
 import { useTenantStore } from '../../app/store/useTenantStore';
 import { ThemeToggle } from '../components/ThemeToggle';
-import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, BarChart3, CalendarDays, Key, Wrench, Globe, Building } from 'lucide-react';
+import { LayoutDashboard, Users, Car, Settings, LogOut, CarFront, FileText, DollarSign, CreditCard, FileSignature, CalendarDays, Key, Wrench, Globe, Building } from 'lucide-react';
 import { auth } from '../../core/firebase/config';
 import { signOut } from 'firebase/auth';
 

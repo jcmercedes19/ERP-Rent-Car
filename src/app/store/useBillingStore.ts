@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { collection, doc, setDoc, updateDoc, deleteDoc, query, where, getDocs, onSnapshot, serverTimestamp, Timestamp } from 'firebase/auth';
-import { db } from '../../core/firebase/config';
 import { useAuthStore } from './useAuthStore';
 
 // Tipos de Comprobantes Fiscales (Dominican Republic NCF / e-CF)

@@ -1,10 +1,19 @@
 import { create } from 'zustand';
-import type { User } from 'firebase/auth';
+
+
+export interface AppUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  companyId?: string;
+  role?: string;
+  branchId?: string;
+}
 
 interface AuthState {
-  user: User | null;
+  user: AppUser | null;
   loading: boolean;
-  setUser: (user: User | null) => void;
+  setUser: (user: AppUser | null) => void;
   setLoading: (loading: boolean) => void;
 }
 

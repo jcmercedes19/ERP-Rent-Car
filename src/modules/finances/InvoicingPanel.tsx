@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useBillingStore } from '../../app/store/useBillingStore';
 import { GlassTable } from '../../shared/components/ui/GlassTable';
 import { formatCurrency } from '../../core/utils/formatters';
@@ -6,7 +6,7 @@ import { FileText, Printer, CheckCircle, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function InvoicingPanel() {
-  const { invoices, fetchInvoices, loading } = useBillingStore();
+  const { invoices, fetchInvoices } = useBillingStore();
 
   useEffect(() => {
     fetchInvoices();
@@ -56,7 +56,7 @@ export function InvoicingPanel() {
     },
     {
       header: '',
-      accessor: (invoice: any) => (
+      accessor: () => (
         <div className="flex justify-end gap-2">
           <button className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
             <Printer size={18} />

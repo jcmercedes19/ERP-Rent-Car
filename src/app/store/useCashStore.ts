@@ -76,7 +76,7 @@ export const useCashStore = create<CashState>((set, get) => ({
       const newRegister: CashRegister = {
         id: `CR-${Date.now()}`,
         companyId: user.companyId,
-        openedBy: user.id,
+        openedBy: user.uid,
         openedAt: new Date(),
         status: 'OPEN',
         initialBalance,
@@ -92,25 +92,24 @@ export const useCashStore = create<CashState>((set, get) => ({
     }
   },
 
-  closeRegister: async (actualBalance) => {
+  closeRegister: async (_actualBalance) => {
     const register = get().currentRegister;
     if (!register) throw new Error('No open register');
 
     set({ loading: true, error: null });
     try {
-      const { user } = useAuthStore.getState();
       
-      const expected = register.initialBalance + register.totalIncome - register.totalExpense + register.totalDeposits - register.totalDepositsReturned;
+      // const expected = register.initialBalance + register.totalIncome - register.totalExpense + register.totalDeposits - register.totalDepositsReturned;
       
-      const closedRegister: CashRegister = {
-        ...register,
-        status: 'CLOSED',
-        closedAt: new Date(),
-        closedBy: user?.id,
-        expectedBalance: expected,
-        actualBalance,
-        discrepancy: actualBalance - expected
-      };
+      // const closedRegister: CashRegister = {
+      //   ...register,
+      //   status: 'CLOSED',
+      //   closedAt: new Date(),
+      //   closedBy: user?.uid,
+      //   expectedBalance: expected,
+      //   actualBalance: _actualBalance,
+      //   discrepancy: _actualBalance - expected
+      // };
 
       set({ currentRegister: null, loading: false });
       // Here we would save to Firestore history
@@ -132,7 +131,7 @@ export const useCashStore = create<CashState>((set, get) => ({
         id: `TR-${Date.now()}`,
         cashRegisterId: register.id,
         companyId: user.companyId,
-        userId: user.id,
+        userId: user.uid,
         createdAt: new Date(),
       };
 
