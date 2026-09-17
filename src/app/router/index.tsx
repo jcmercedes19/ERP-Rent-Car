@@ -14,6 +14,8 @@ import { Dashboard } from '../../modules/dashboard/Dashboard';
 import { ReservationCalendar } from '../../modules/reservations/ReservationCalendar';
 import { CheckInOutPanel } from '../../modules/operations/CheckInOutPanel';
 import { MaintenancePanel } from '../../modules/fleet/MaintenancePanel';
+import { PublicLayout } from '../../shared/layouts/PublicLayout';
+import { BookingPortal } from '../../modules/public/BookingPortal';
 
 export const router = createBrowserRouter([
   {
@@ -23,6 +25,16 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <RegisterCompany />,
+  },
+  {
+    path: '/:companyId/book',
+    element: <PublicLayout />,
+    children: [
+      {
+        index: true,
+        element: <BookingPortal />
+      }
+    ]
   },
   {
     path: '/',

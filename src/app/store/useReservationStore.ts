@@ -26,6 +26,8 @@ interface ReservationState {
   fetchReservations: (companyId: string) => Promise<void>;
   addReservation: (data: Omit<Reservation, 'id' | 'createdAt'>) => Promise<void>;
   updateReservationStatus: (id: string, status: Reservation['status']) => Promise<void>;
+  updateReservation: (id: string, data: Partial<Reservation>) => Promise<void>;
+  createPublicReservation: (data: Omit<Reservation, 'id' | 'createdAt' | 'updatedAt' | 'companyId'> & { companyId: string }) => Promise<void>;
 }
 
 export const useReservationStore = create<ReservationState>((set) => ({
@@ -99,6 +101,47 @@ export const useReservationStore = create<ReservationState>((set) => ({
         reservations: state.reservations.map(r => r.id === id ? { ...r, status } : r),
         loading: false
       }));
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  updateReservation: async (id: string, data: Partial<Reservation>) => {
+    set({ loading: true, error: null });
+    try {
+      const ref = doc(db, 'reservations', id);
+      await updateDoc(ref, {
+        ...data,
+        updatedAt: serverTimestamp(),
+      });
+      set((state) => ({
+        reservations: state.reservations.map(r => r.id === id ? { ...r, ...data } : r),
+        loading: false
+      }));
+    } catch (error: any) {
+      set({ error: error.message, loading: false });
+      throw error;
+    }
+  },
+
+  createPublicReservation: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const newRef = doc(collection(db, 'reservations'));
+      const newReservation = {
+        ...data,
+        id: newRef.id,
+        status: 'PENDING_APPROVAL', // Force this status for public
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      await setDoc(newRef, newReservation);
+      
+      // We don't automatically add it to the state here if the user is a public guest,
+      // because they don't have a logged-in listener state for the whole fleet.
+      // But we can set loading to false.
+      set({ loading: false });
     } catch (error: any) {
       set({ error: error.message, loading: false });
       throw error;
